@@ -7,6 +7,7 @@ export default function PlansPage() {
   const instituteState = useSelector((state) => state.Institute);
   const instituteId = instituteState?.currentInstitute?.instituteId || "";
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -51,7 +52,7 @@ export default function PlansPage() {
       setLoadingPlans(true);
 
       const res = await axios.get(
-        "https://effie-uncandied-dumpily.ngrok-free.dev/plans/allPlans",
+        `${API_URL}/plans/allPlans`,
         { headers: { "ngrok-skip-browser-warning": "true" } }
       );
 

@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Search, Plus, UserCheck, Mail, Phone, BookOpen, X, Loader2 } from "lucide-react";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-const API_URL = "https://effie-uncandied-dumpily.ngrok-free.dev/student/all";
-const UPDATE_API_URL = "https://effie-uncandied-dumpily.ngrok-free.dev/student/updateStudent";
-const ADD_API_URL = "https://effie-uncandied-dumpily.ngrok-free.dev/student/addStudent";
+const API_URL = `${BASE_URL}/student/all`;
+const UPDATE_API_URL = `${BASE_URL}/student/updateStudent`;
+const ADD_API_URL = `${BASE_URL}/student/addStudent`;
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -22,7 +23,7 @@ export default function Students() {
   useEffect(() => {
     const fetchStudents = async () => {
      try {
-  const res = await axios.get(API_URL, { headers: { "ngrok-skip-browser-warning": "true" } });
+  const res = await axios.get(API_URL);
   setStudents(Array.isArray(res.data.students) ? res.data.students : []);
 } catch (err) {
   console.error("Fetch Students Error:", err);

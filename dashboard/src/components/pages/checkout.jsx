@@ -33,7 +33,7 @@ export default function Checkout() {
     const fetchPlan = async () => {
       try {
         const res = await axios.get(
-          `https://effie-uncandied-dumpily.ngrok-free.dev/plans/plan/${planId}`,
+         `${BASE_URL}/plans/plan/${planId}`,
           { headers: { "ngrok-skip-browser-warning": "true" } }
         );
         const planData = {
@@ -62,6 +62,7 @@ export default function Checkout() {
   const taxableAmount = baseTotal - discountAmount - promoAmount;
   const gstAmount = (taxableAmount * GST_PERCENT) / 100;
   const finalAmount = taxableAmount + gstAmount;
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
   const handleApplyPromo = () => {
     if (promoCode.toUpperCase() === "FIRST10" && isFirstTime) {
@@ -76,9 +77,8 @@ export default function Checkout() {
     try {
       if (!selectedMonths) return;
       await axios.post(
-        `https://effie-uncandied-dumpily.ngrok-free.dev/billing/create-and-activate/${instituteId}/${planId}`,
-        { months: selectedMonths, promoCode: promoCode || "" },
-        { headers: { "ngrok-skip-browser-warning": "true" } }
+       `${BASE_URL}/billing/create-and-activate/${instituteId}/${planId}`,
+        { months: selectedMonths, promoCode: promoCode || "" }
       );
       alert("Plan Activated!");
       navigate("/dashboard/settings/plans");

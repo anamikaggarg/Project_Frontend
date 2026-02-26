@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux'
 import { setInstitute } from '../redux/slices/institute'
+// import { useLocation} from "react-router-dom";
+
 
 function Login() {
   const dispatch = useDispatch();
@@ -11,6 +13,23 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
+  // const location = useLocation();
+
+// const from = location.state?.from || "/";
+// const billingDuration = location.state?.billingDuration;
+// const planId = location.state?.planId;
+
+// if (from.includes("/billing")) {
+//   navigate(from, {
+//     state: { billingDuration },
+//     replace: true,
+//   });
+// } else {
+//   navigate("/", { replace: true });
+// }
+
+
 
 
   // If already logged in, redirect
@@ -28,7 +47,7 @@ function Login() {
     setLoading(true);
     try {
       const res = await axios.post(
-        "https://effie-uncandied-dumpily.ngrok-free.dev/institute/login",
+       `${API_URL}/institute/login`,
         { email: email.trim(), password },
         { withCredentials: true }
       );

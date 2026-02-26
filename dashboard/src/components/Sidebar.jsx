@@ -11,12 +11,13 @@ import LockedModal from "./LockedModal";
 export default function Sidebar({ open, setOpen }) {
   const navigate = useNavigate();
   const storedInstitute = JSON.parse(localStorage.getItem("institute"));
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
   const [institute, setInstitute] = useState(
-    storedInstitute || { name: "Loading...", email: "", logo: "/default-logo.png", plan: "" }
+    storedInstitute || { email: "", logo: "/default-logo.png", plan: "" }
   );
 
-  const [plans, setPlans] = useState([]);
+  // const [plans, setPlans] = useState([]);
   const [openAcademics, setOpenAcademics] = useState(false);
   const [openFinance, setOpenFinance] = useState(false);
   const [openReports, setOpenReports] = useState(false);
@@ -25,21 +26,22 @@ export default function Sidebar({ open, setOpen }) {
   const handleLogout = () => {
     localStorage.removeItem("institute");
     navigate("/login");
-  };
+  };console.log(institute);
 
-  // Helper for navigation + mobile auto-close
+
   const handleNav = (path) => {
     navigate(path);
     if (window.innerWidth < 1024) setOpen(false);
   };
+  console.log("PlanStatus:", institute.planStatus);
+console.log("Features:", institute.customFeatures);
 
   useEffect(() => {
     if (!storedInstitute?.email) return;
     const fetchInstitute = async () => {
       try {
         const res = await axios.get(
-          `https://effie-uncandied-dumpily.ngrok-free.dev/institute/by-email/${storedInstitute.email}`,
-          { headers: { "ngrok-skip-browser-warning": "1" } }
+           `${BASE_URL}/institute/by-email/${storedInstitute.email}`,
         );
         const logoUrl = res.data.logo ? (res.data.logo.startsWith("http") ? res.data.logo : `${res.data.logo}`) : "/default-logo.png";
         const updatedInstitute = { ...res.data, logo: logoUrl };
@@ -50,27 +52,52 @@ export default function Sidebar({ open, setOpen }) {
     fetchInstitute();
   }, [storedInstitute?.email]);
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const { data } = await axios.get("https://effie-uncandied-dumpily.ngrok-free.dev/plans/allPlans",
-          { headers: { "ngrok-skip-browser-warning": "1" } }
-        );
-        setPlans(data.plans || []);
-      } catch (err) { console.error("Failed to fetch plans:", err); }
-    };
-    fetchPlans();
-  }, []);
+  // useEffect(() => {
+  //   const fetchPlans = async () => {
+  //     try {
+  //       const { data } = await axios.get(`${BASE_URL}/plans/allPlans`,
+  //       );
+  //       setPlans(data.plans || []);
+  //     } catch (err) { console.error("Failed to fetch plans:", err); }
+  //   };
+  //   fetchPlans();
+  // }, []);
 
-  const currentPlan = plans.find((p) => p.name?.toLowerCase() === institute.plan?.toLowerCase()) || plans.find((p) => p.name?.toLowerCase().includes("trial"));
+  // const currentPlan = plans.find((p) => p.name?.toLowerCase() === institute.currentPlan?.toLowerCase()) || plans.find((p) => p.name?.toLowerCase().includes("trial"));
 
-  const checkFeatureAccess = (path) => {
-    if (!path) return true;
-    const keys = path.split(".");
-    let value = currentPlan?.features;
-    for (let key of keys) { value = value?.[key]; }
-    return value === true;
-  };
+const checkFeatureAccess = (path) => {
+  if (!institute?.customFeatures) return false;
+
+  if (institute.planStatus !== "active") return false;
+
+  if (
+    institute.planEndDate &&
+    new Date(institute.planEndDate) < new Date()
+  ) {
+    return false;
+  }
+
+  const keys = path.split(".");
+  let value = institute.customFeatures;
+
+  for (let key of keys) {
+    if (
+      value &&
+      typeof value === "object" &&
+      Object.prototype.hasOwnProperty.call(value, key)
+    ) {
+      value = value[key];
+    } else {
+      return false;
+    }
+  }
+
+  return value === true;
+};
+console.log(
+  "Student Feature:",
+  checkFeatureAccess("academic.studentInfo")
+);
 
   return (
     <>
@@ -88,7 +115,7 @@ export default function Sidebar({ open, setOpen }) {
           <img src={"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOQpyCWXaTTBC203h2MvPZz7Cer2RxQr0Ktg&s"} alt="Profile" className="w-24 h-24 rounded-full border-2 border-white shadow bg-white" />
           <h2 className="mt-3 text-xl font-semibold text-center px-2">{institute.name}</h2>
           <p className="text-sm text-slate-300">{institute.email}</p>
-          <p className="text-xs text-yellow-400 mt-1 uppercase">Plan: {institute.plan || "Trial"}</p>
+          <p className="text-xs text-yellow-400 mt-1 uppercase">Plan: {institute.currentPlan || "Trial"}</p>
         </div>
 
         {/* Navigation Section */}
