@@ -9,12 +9,14 @@ import { setInstitute } from '../redux/slices/institute'
 function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(true)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
   // const location = useLocation();
+
+
 
 // const from = location.state?.from || "/";
 // const billingDuration = location.state?.billingDuration;
