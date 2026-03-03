@@ -21,14 +21,14 @@ import PlansPage from "./components/pages/PlansPage";
 import BillPage from "./components/pages/BillPage";
 import Checkout from "./components/pages/checkout";
 
-// PrivateRoute ensures only logged-in institutes can access dashboard
+
 function PrivateRoute({ children }) {
   const dispatch = useDispatch();
   const instituteState = useSelector(state => state.Institute);
   // const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Hydrate redux from localStorage
+    
     if (!instituteState?.currentInstitute) {
       const stored = localStorage.getItem("institute");
       if (stored) dispatch(setInstitute(JSON.parse(stored)));
@@ -45,7 +45,7 @@ function PrivateRoute({ children }) {
   return children;
 }
 
-// Optional: Redirect logged-in users from Register/Login
+
 function PublicRoute({ children }) {
   const instituteState = useSelector(state => state.Institute);
   if (instituteState?.currentInstitute?.instituteId) {

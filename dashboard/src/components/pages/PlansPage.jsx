@@ -87,7 +87,7 @@ export default function PlansPage() {
   return (
     <div className="px-4 py-6">
       <div className="border rounded-lg p-6 mb-10 bg-gray-50 shadow-sm">
-        <div className="flex gap-10 flex-wrap">
+        {/* <div className="flex gap-10 flex-wrap">
           <div>
             <p className="text-sm text-gray-500">Plan Name</p>
             <p className="font-medium">{currentPlan.name}</p>
@@ -107,7 +107,7 @@ export default function PlansPage() {
             <p className="text-sm text-gray-500">Expires In</p>
             <p>{getRemainingDays(currentPlan.endDate)}</p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {loadingPlans && (

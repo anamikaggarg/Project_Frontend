@@ -22,11 +22,25 @@ export default function Sidebar({ open, setOpen }) {
   const [openFinance, setOpenFinance] = useState(false);
   const [openReports, setOpenReports] = useState(false);
   const [showLockedModal, setShowLockedModal] = useState(false);
+  
+const handleLogout = async () => {
+  try {
+    await axios.post(
+      `${BASE_URL}/institute/logout`,
+      {}, // POST body (empty)
+      { withCredentials: true } // ✅ Correct config
+    );
 
-  const handleLogout = () => {
+    // ✅ Clear LocalStorage
     localStorage.removeItem("institute");
-    navigate("/login");
-  };console.log(institute);
+
+    // ✅ Redirect to login
+    navigate("/login", { replace: true });
+
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
 
 
   const handleNav = (path) => {
