@@ -64,7 +64,6 @@ export default function Students() {
     try {
       const res = await axios.put(`${UPDATE_API_URL}/${selectedStudent.email}`, 
         { status: "Approved", course: selectedCourse },
-        { headers: { "ngrok-skip-browser-warning": "true" } }
       );
       if (res.data.success) {
         setStudents(prev => prev.map(s => s.email === selectedStudent.email ? { ...s, status: "Approved", course: selectedCourse } : s));

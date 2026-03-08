@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Lock, KeyRound } from "lucide-react";
+import axios from "axios";
 
 export default function PasswordPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -9,7 +10,9 @@ export default function PasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleUpdatePassword = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const handleUpdatePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
       alert("All fields required");
       return;
@@ -20,26 +23,40 @@ export default function PasswordPage() {
       return;
     }
 
-    alert("Password Updated Successfully");
+    try {
 
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setShowUpdateModal(false);
+      const res = await axios.post(
+        `${API_URL}/institute/update-password`,
+        {
+          oldPassword,
+          newPassword
+        },
+        {
+          withCredentials: true
+        }
+      );
+
+      alert(res.data.message);
+
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowUpdateModal(false);
+
+    } catch (error) {
+      alert(error.response?.data?.message || "Error updating password");
+    }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-8 h-full w-full">
 
-      {/* Heading */}
       <h2 className="text-2xl font-semibold mb-8 text-gray-800 flex items-center gap-2">
         ⚙️ Security Settings
       </h2>
 
-      {/* Options Cards */}
       <div className="grid md:grid-row-2 gap-6">
 
-        {/* Update Password */}
         <div
           onClick={() => setShowUpdateModal(true)}
           className="group cursor-pointer p-6 rounded-2xl border border-gray-200 hover:border-[#24324F] hover:shadow-lg transition-all duration-300"
@@ -60,7 +77,6 @@ export default function PasswordPage() {
           </div>
         </div>
 
-        {/* Forgot Password */}
         <div
           onClick={() => setShowForgotModal(true)}
           className="group cursor-pointer p-6 rounded-2xl border border-gray-200 hover:border-[#24324F] hover:shadow-lg transition-all duration-300"
@@ -83,7 +99,6 @@ export default function PasswordPage() {
 
       </div>
 
-      {/* ================= UPDATE PASSWORD MODAL ================= */}
       {showUpdateModal && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
@@ -142,7 +157,6 @@ export default function PasswordPage() {
         </div>
       )}
 
-      {/* ================= FORGOT PASSWORD MODAL ================= */}
       {showForgotModal && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"

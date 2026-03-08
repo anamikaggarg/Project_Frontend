@@ -20,6 +20,7 @@ import PasswordPage from "./components/pages/PasswordPage";
 import PlansPage from "./components/pages/PlansPage";
 import BillPage from "./components/pages/BillPage";
 import Checkout from "./components/pages/checkout";
+import StaffDirectory from "./components/Staff/StaffDirectory";
 
 
 function PrivateRoute({ children }) {
@@ -94,6 +95,8 @@ export default function App() {
           <Route path="notices" element={<Notices />} />
           <Route path="reports" element={<Reports />} />
 
+            <Route path="staff" element={<StaffDirectory/>} />
+
           <Route path="settings" element={<Settings />}>
             <Route index element={<ProfilePage />} />
             <Route path="profile" element={<ProfilePage />} />
@@ -101,11 +104,18 @@ export default function App() {
             <Route path="plans" element={<PlansPage />} />
             <Route path="billing" element={<BillPage />} />
           </Route>
+        
 
           <Route path="checkout/:instituteId/:planId" element={<Checkout />} />
+          
+         
+        
         </Route>
+         {/* <Route path ="/dashbaord/staff" element = {<staffPanel/>}/> */}
+        
+        {/* <Route path = "/dashboard/staff" element = {<staffPanel/>} */}
 
-        {/* Fallback for unknown routes */}
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

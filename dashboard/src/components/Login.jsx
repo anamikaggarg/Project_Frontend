@@ -56,6 +56,7 @@ function Login() {
 
       if (res.data.success) {
         const institute = res.data.institute;
+         const token = res.data.token;  
         dispatch(setInstitute(res.data.institute))
         const logoUrl = institute.logo
           ? `https://effie-uncandied-dumpily.ngrok-free.dev${institute.logo}`
@@ -66,7 +67,8 @@ function Login() {
           JSON.stringify({ ...institute, logo: logoUrl })
 
         );
-        console.log("Logo URL after login:", institute.logo);
+         localStorage.setItem("token", token); 
+        // console.log("Logo URL after login:", institute.logo);
 
         alert("Login Successful");
         navigate("/dashboard");
@@ -99,7 +101,7 @@ function Login() {
         ${darkMode ? "bg-gray-800" : "bg-white"}`}
       >
         <h2
-          className={`text-3xl font-bold mb-6
+          className={`text-3xl font-bold mb-6 ms-2
           ${darkMode ? "text-indigo-400" : "text-indigo-600"}`}
         >
           Institute Login
@@ -141,13 +143,14 @@ function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <button
-          className={`mt-5 w-full py-2 rounded border transition
+         <button
+          onClick={() => navigate("/register")} 
+          className={`mt-3 w-full py-2 rounded border transition
           ${darkMode
               ? "border-gray-600 hover:bg-gray-700"
               : "border-gray-300 hover:bg-gray-200"}`}
         >
-          Forget Password? Please Reset
+           Already have an account? Login
         </button>
       </div>
     </div>

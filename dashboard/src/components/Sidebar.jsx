@@ -27,15 +27,18 @@ const handleLogout = async () => {
   try {
     await axios.post(
       `${BASE_URL}/institute/logout`,
-      {}, // POST body (empty)
+      {}, 
       { withCredentials: true } // ✅ Correct config
     );
 
-    // ✅ Clear LocalStorage
+   
     localStorage.removeItem("institute");
+     localStorage.clear();
+     
 
-    // ✅ Redirect to login
+  
     navigate("/login", { replace: true });
+     window.location.reload();
 
   } catch (error) {
     console.error("Logout error:", error);
@@ -189,6 +192,14 @@ console.log(
               </div>
             )}
           </div>
+
+           <div className="px-3 py-2 rounded-md hover:bg-slate-700 flex items-center gap-2 cursor-pointer" onClick={()=> handleNav("/dashboard/staff")}>
+            <FontAwesomeIcon icon={faGear} /> <span>Staff</span>
+
+          </div>
+
+
+
 
           <div className="px-3 py-2 rounded-md hover:bg-slate-700 flex items-center gap-2 cursor-pointer" onClick={() => handleNav("/dashboard/settings")}>
             <FontAwesomeIcon icon={faGear} /> <span>Settings</span>

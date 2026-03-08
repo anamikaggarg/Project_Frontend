@@ -9,23 +9,24 @@ import autoTable from "jspdf-autotable";
 export default function BillPage() {
   const instituteState = useSelector((state) => state.Institute);
   const instituteId = instituteState?.currentInstitute?.instituteId;
+
   const [activeBill, setActiveBill] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
-    if (!instituteId) {
-      setError("Institute not found. Please login.");
-      setLoading(false);
-      return;
-    }
+    if (!instituteId) return; 
 
     const fetchActiveBill = async () => {
+      setLoading(true);
+      setError("");
       try {
-        const res = await axios.get(
-          `https://effie-uncandied-dumpily.ngrok-free.dev/billing/${instituteId}`,
-          { headers: { "ngrok-skip-browser-warning": "true" } }
-        );
+        // console.log("Fetching bills for:", BASE_URL, instituteId);
+        const res = await axios.get(`${BASE_URL}/billing/${instituteId}`);
+        // console.log("Billing response:", res.data);
+
         if (res.data?.bills?.length > 0) {
           setActiveBill(res.data.bills[0]);
         } else {
@@ -81,7 +82,6 @@ export default function BillPage() {
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-12 font-sans">
       <div className="max-w-3xl mx-auto space-y-6">
-       
         {activeBill && (
           <div className="bg-green-100 text-green-800 rounded-xl p-4 flex items-center gap-3 shadow-md animate-fadeIn">
             <CheckCircle size={22} />
@@ -89,7 +89,6 @@ export default function BillPage() {
           </div>
         )}
 
-      
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Billing & Subscription</h1>
           <div className="flex items-center gap-2 text-green-500 font-semibold text-sm">
@@ -97,7 +96,6 @@ export default function BillPage() {
           </div>
         </div>
 
-        
         {activeBill && (
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition duration-200">
             <div className="flex justify-between items-center mb-4">

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
 import { setInstitute } from "../../redux/slices/institute";
-import { Upload, Save } from "lucide-react";
+import { Save, Upload } from "lucide-react";
 
 export default function ExecutiveInstituteProfile() {
   const dispatch = useDispatch();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const institute = useSelector(
     (state) => state?.Institute?.currentInstitute
@@ -17,188 +18,188 @@ export default function ExecutiveInstituteProfile() {
     name: "",
     email: "",
     contact: "",
+    alternatePhone: "",
+    city: "",
     address: "",
-    website: "",
-    registrationNumber: "",
-    inaugurationYear: "",
-    gstin: "",
-    pan: ""
+    numberOfStudents: "",
+    aadhaarNumber: "",
+    gstNumber: "",
+    courses: "",
+    logo: ""
   });
 
-  const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState("");
-
   useEffect(() => {
-     console.log("Redux Institute Data", institute);
     if (!institute) return;
 
     setFormData({
       name: institute?.name || "",
       email: institute?.email || "",
       contact: institute?.contact || "",
+      alternatePhone: institute?.alternatePhone || "",
+      city: institute?.city || "",
       address: institute?.address || "",
-      website: institute?.website || "",
-      registrationNumber: institute?.registrationNumber || "",
-      inaugurationYear: institute?.inaugurationYear || "",
-      gstin: institute?.gstin || "",
-      pan: institute?.pan || ""
+      numberOfStudents: institute?.numberOfStudents || "",
+      aadhaarNumber: institute?.aadhaarNumber || "",
+      gstNumber: institute?.gstNumber || "",
+      courses: institute?.courses?.join(", ") || "",
+      logo: institute?.logo || ""
     });
-
-    setLogoPreview(institute?.logo || "");
   }, [institute]);
 
-  // ✅ Handle Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  // ✅ Handle Logo Upload
-  const handleLogoChange = (e) => {
+  const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file.");
-      return;
-    }
-
-    setLogoFile(file);
-
-    const previewURL = URL.createObjectURL(file);
-    setLogoPreview(previewURL);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({
+        ...prev,
+        logo: reader.result
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
-  // ✅ Save Profile
   const handleSave = async () => {
-    if (!institute?.instituteId) {
-      alert("Institute ID missing");
-      return;
-    }
-
     try {
-      setLoading(true);
-
-      const data = new FormData();
-
-      Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key] || "");
-      });
-
-      if (logoFile) {
-        data.append("logo", logoFile);
+      if (!institute?.instituteId) {
+        alert("Institute ID missing");
+        return;
       }
 
+      setLoading(true);
+
+      const payload = {
+        ...formData,
+        numberOfStudents: Number(formData.numberOfStudents),
+        courses: formData.courses
+          ? formData.courses.split(",").map((c) => c.trim())
+          : []
+      };
+
       const res = await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/institute/update/${institute.instituteId}`,
-        data,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        }
+        `${API_URL}/institute/updateInstitute/${institute.instituteId}`,
+        payload,
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      dispatch(setInstitute(res?.data?.data));
+      if (res.data?.data) {
+        dispatch(setInstitute(res.data.data));
+      }
+
       alert("Profile Updated Successfully 🎉");
     } catch (error) {
-      console.error("Update Error:", error?.response?.data || error.message);
-      alert("Something went wrong while updating.");
+      console.error("Update Error:", error.response?.data || error.message);
+      alert("Update Failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 text-slate-900">
-      
-      {/* Top Bar */}
-      <div className="bg-slate-900 text-xs text-slate-400 py-3 px-8 uppercase tracking-widest">
-        Institute ID: {institute?.instituteId || "UNREGISTERED"}
+    <div className="min-h-screen py-10 px-4">
+
+      {/* Top ID Strip */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <div className="bg-slate-900 text-slate-300 text-xs py-3 px-6 rounded-lg shadow tracking-widest uppercase">
+          Institute ID: {institute?.instituteId || "UNREGISTERED"}
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-12">
+      <div className="max-w-6xl mx-auto bg-white/70 backdrop-blur-xl shadow-2xl rounded-2xl p-10 border border-white/40">
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-10 border-b border-slate-300 pb-6">
-          <div>
-            <h1 className="text-3xl font-light">
-              Update your <span className="font-bold">Profile</span>
-            </h1>
-            <p className="text-slate-500 text-sm mt-2">
-              Configure branding, identity & fiscal details.
-            </p>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+
+          <div className="flex items-center gap-8">
+
+            {/* Logo */}
+            <div className="relative group">
+              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100">
+                {formData.logo ? (
+                  <img
+                    src={formData.logo}
+                    alt="Institute Logo"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-sm text-gray-400">
+                    No Logo
+                  </div>
+                )}
+              </div>
+
+              <label className="absolute bottom-0 right-0 bg-slate-900 text-white p-2 rounded-full cursor-pointer shadow hover:bg-slate-800 transition">
+                <Upload size={16} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800">
+                Institute Profile
+              </h1>
+              <p className="text-sm text-slate-500 mt-2">
+                Manage and update your institute information
+              </p>
+            </div>
           </div>
 
+          {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition shadow-lg disabled:opacity-60"
+            className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-xl font-semibold shadow-lg hover:scale-105 hover:bg-slate-800 transition-all duration-200 disabled:opacity-60"
           >
-            <Save size={14} />
-            {loading ? "Saving..." : "Commit Changes"}
+            <Save size={18} />
+            {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
 
-        {/* Logo Section */}
-        <div className="bg-white border border-slate-200 p-8 mb-8 shadow-sm rounded-xl">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6">
-            Institute Logo
-          </h2>
+        {/* Form */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-          <div className="flex items-center gap-8">
-            <div className="w-32 h-32 border border-slate-300 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
-              {logoPreview ? (
-                <img
-                  src={logoPreview}
-                  alt="Logo Preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xs text-slate-400">No Logo</span>
-              )}
-            </div>
-
-            <label className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition">
-              <Upload size={14} />
-              Upload Logo
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoChange}
-                hidden
-              />
-            </label>
-          </div>
-        </div>
-
-        {/* Form Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white border border-slate-200 p-8 shadow-sm rounded-xl">
-          {Object.keys(formData).map((key) => (
-            <div key={key}>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                {key.replace(/([A-Z])/g, " $1")}
+          {[
+            { label: "Institute Name", name: "name", type: "text" },
+            { label: "Email", name: "email", type: "email" },
+            { label: "Contact", name: "contact", type: "text" },
+            { label: "Alternate Phone", name: "alternatePhone", type: "text" },
+            { label: "City", name: "city", type: "text" },
+            { label: "Address", name: "address", type: "text" },
+            { label: "Number of Students", name: "numberOfStudents", type: "number" },
+            { label: "Aadhaar Number", name: "aadhaarNumber", type: "text" },
+            { label: "GST Number", name: "gstNumber", type: "text" },
+            { label: "Courses (comma separated)", name: "courses", type: "text" }
+          ].map((field) => (
+            <div key={field.name} className="flex flex-col">
+              <label className="text-sm font-medium text-slate-600 mb-2">
+                {field.label}
               </label>
               <input
-                type={
-                  key === "email"
-                    ? "email"
-                    : key === "inaugurationYear"
-                    ? "number"
-                    : "text"
-                }
-                name={key}
-                value={formData[key]}
+                type={field.type}
+                name={field.name}
+                value={formData[field.name]}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:bg-white focus:border-slate-900 outline-none"
+                className="w-full border border-slate-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-slate-800 focus:outline-none transition shadow-sm bg-white"
               />
             </div>
           ))}
+
         </div>
+
       </div>
     </div>
   );
