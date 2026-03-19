@@ -21,6 +21,8 @@ import PlansPage from "./components/pages/PlansPage";
 import BillPage from "./components/pages/BillPage";
 import Checkout from "./components/pages/checkout";
 import StaffDirectory from "./components/Staff/StaffDirectory";
+import StaffProfile from "./components/Staff/StaffProfile";
+
 
 
 function PrivateRoute({ children }) {
@@ -95,7 +97,9 @@ export default function App() {
           <Route path="notices" element={<Notices />} />
           <Route path="reports" element={<Reports />} />
 
-            <Route path="staff" element={<StaffDirectory/>} />
+           <Route path="staff" element={<StaffDirectory />} />
+  <Route path="staff/:id" element={<StaffProfile/>} /> 
+  {/* STAFF SECTION END */}
 
           <Route path="settings" element={<Settings />}>
             <Route index element={<ProfilePage />} />

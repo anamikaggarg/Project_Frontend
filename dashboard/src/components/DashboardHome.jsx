@@ -1,17 +1,17 @@
 export default function DashboardHome() {
   return (
-    <main className="p-6 bg-[#f6f5fa] min-h-screen space-y-6 font-sans">
+    <main className="p-6 bg-white min-h-screen space-y-6 font-sans">
       <div className="flex flex-wrap gap-4">
         <div className="flex-1 min-w-[150px] rounded-lg shadow p-5 flex items-center gap-4 bg-[#e6ecfb] hover:shadow-lg transition">
-          {/* <span className="text-2xl">👨‍🎓</span> */}
+          <span className="text-2xl">👨‍🎓</span>
           <div>
             <p className="text-sm font-medium text-blue-700 uppercase">Total Students</p>
             <h3 className="text-3xl font-bold text-blue-800">1,250</h3>
           </div>
         </div>
 
-        <div className="flex-1 min-w-[150px] rounded-lg shadow p-5 flex items-center gap-4 bg-green-100 hover:shadow-lg transition">
-          {/* <span className="text-2xl">🧑‍🏫</span> */}
+        <div className="flex-1 min-w-[150px] rounded-lg shadow p-5 flex items-center gap-4 bg-green-200 hover:shadow-lg transition">
+          <span className="text-2xl">🧑‍🏫</span>
           <div>
             <p className="text-sm font-medium text-green-700 uppercase">Total Staff</p>
             <h3 className="text-3xl font-bold text-green-800">75</h3>
@@ -19,7 +19,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="flex-1 min-w-[150px] rounded-lg shadow p-5 flex items-center gap-4 bg-[#fdecdf] hover:shadow-lg transition">
-          {/* <span className="text-2xl">💰</span> */}
+          <span className="text-2xl">💰</span>
           <div>
             <p className="text-sm font-medium text-yellow-700 uppercase">Fees Collected</p>
             <h3 className="text-3xl font-bold text-yellow-800">$45,200</h3>
@@ -27,7 +27,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="flex-1 min-w-[150px] rounded-lg shadow p-5 flex items-center gap-4 bg-[#fef3d7] hover:shadow-lg transition">
-          {/* <span className="text-2xl">⚠️</span> */}
+          <span className="text-2xl">⚠️</span>
           <div>
             <p className="text-sm font-medium text-red-700 uppercase">Pending Fees</p>
             <h3 className="text-3xl font-bold text-red-800">$8,400</h3>
@@ -48,24 +48,24 @@ export default function DashboardHome() {
       <div className="flex flex-col lg:flex-row gap-6">
 
         {/* Quick Reports */}
-      <div className="flex-1 bg-gray-100 rounded-lg shadow p-5">
+      <div className="flex-1 bg-white rounded-lg shadow p-5">
   <h2 className="font-semibold text-xl mb-4 text-gray-800">Quick Reports</h2>
 
   <div className="flex flex-wrap gap-4">
     <div className="w-[45%] border rounded-lg p-4 hover:shadow cursor-pointer transition bg-gray-50 flex items-center gap-2">
-      {/* <span className="text-xl">👨‍🎓</span> */}
+      <span className="text-xl">👨‍🎓</span>
       <p className="font-medium text-gray-700">Student List</p>
     </div>
     <div className="w-[45%] border rounded-lg p-4 hover:shadow cursor-pointer transition bg-gray-50 flex items-center gap-2">
-      {/* <span className="text-xl">🧑‍🏫</span> */}
+      <span className="text-xl">🧑‍🏫</span>
       <p className="font-medium text-gray-700">Staff List</p>
     </div>
     <div className="w-[45%] border rounded-lg p-4 hover:shadow cursor-pointer transition bg-gray-50 flex items-center gap-2">
-      {/* <span className="text-xl">📋</span> */}
+      <span className="text-xl">📋</span>
       <p className="font-medium text-gray-700">Attendance Report</p>
     </div>
     <div className="w-[45%] border rounded-lg p-4 hover:shadow cursor-pointer transition bg-gray-50 flex items-center gap-2">
-      {/* <span className="text-xl">💰</span> */}
+      <span className="text-xl">💰</span>
       <p className="font-medium text-gray-700">Finance Report</p>
     </div>
   </div>
@@ -96,8 +96,8 @@ export default function DashboardHome() {
       </div>
 
       {/* ===== FEE SUMMARY + STAFF OVERVIEW ===== */}
-      <div className="flex flex-col lg:flex-row gap-6 bg-[#f6f5fa]">
-        <div className="flex-1 bg-[#f6f5fa] rounded-lg shadow p-5">
+      <div className="flex flex-col lg:flex-row gap-6 bg-white">
+        <div className="flex-1 bg-white rounded-lg shadow p-5">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold text-xl text-gray-800">Fee Summary</h2>
             <span className="text-sm text-blue-500 cursor-pointer font-medium">View Details</span>

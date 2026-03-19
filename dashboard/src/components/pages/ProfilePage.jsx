@@ -107,7 +107,7 @@ export default function ExecutiveInstituteProfile() {
   return (
     <div className="min-h-screen py-10 px-4">
 
-      {/* Top ID Strip */}
+      
       <div className="max-w-6xl mx-auto mb-6">
         <div className="bg-slate-900 text-slate-300 text-xs py-3 px-6 rounded-lg shadow tracking-widest uppercase">
           Institute ID: {institute?.instituteId || "UNREGISTERED"}
@@ -115,13 +115,8 @@ export default function ExecutiveInstituteProfile() {
       </div>
 
       <div className="max-w-6xl mx-auto bg-white/70 backdrop-blur-xl shadow-2xl rounded-2xl p-10 border border-white/40">
-
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
-
           <div className="flex items-center gap-8">
-
-            {/* Logo */}
             <div className="relative group">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100">
                 {formData.logo ? (
@@ -136,7 +131,6 @@ export default function ExecutiveInstituteProfile() {
                   </div>
                 )}
               </div>
-
               <label className="absolute bottom-0 right-0 bg-slate-900 text-white p-2 rounded-full cursor-pointer shadow hover:bg-slate-800 transition">
                 <Upload size={16} />
                 <input
@@ -157,8 +151,6 @@ export default function ExecutiveInstituteProfile() {
               </p>
             </div>
           </div>
-
-          {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={loading}
@@ -168,8 +160,6 @@ export default function ExecutiveInstituteProfile() {
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
-
-        {/* Form */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           {[

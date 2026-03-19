@@ -1,50 +1,36 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
 import axios from "axios";
-// import { setInstitute } from "../../redux/slices/institute";
 import { 
-  ArrowLeft, 
-  ShieldCheck, 
-  Tag, 
-  CheckCircle2,
-  Lock,
-  ChevronRight,
-  Sparkles,
-  CreditCard
+  ShieldCheck, CheckCircle2, Lock, ChevronRight, 
+  Loader2, ArrowLeft, Info, CreditCard, Landmark, Wallet
 } from "lucide-react";
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export default function Checkout() {
   const { instituteId, planId } = useParams();
   const navigate = useNavigate();
-  // const dispatch = useDispatch();
 
-  const instituteRedux = useSelector((state) => state.Institute.currentInstitute);
   const [plan, setPlan] = useState(null);
   const [selectedMonths, setSelectedMonths] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [calcLoading, setCalcLoading] = useState(false);
   const [promoCode, setPromoCode] = useState("");
-  const [promoDiscount, setPromoDiscount] = useState(0);
-
-  const GST_PERCENT = 18;
-  const isFirstTime = !instituteRedux?.hasPurchasedPlanBefore;
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [totals, setTotals] = useState(null);
 
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const res = await axios.get(
-         `${BASE_URL}/plans/plan/${planId}`,
-          { headers: { "ngrok-skip-browser-warning": "true" } }
-        );
-        const planData = {
-          ...res.data.plan,
-          actualPrice: res.data.plan.price,
-          discounts: res.data.plan.discount || []
-        };
+        const res = await axios.get(`${BASE_URL}/plans/plan/${planId}`);
+        const planData = res.data.plan;
         setPlan(planData);
-        if (planData.discounts.length > 0) setSelectedMonths(planData.discounts[0].duration);
+        const durations = planData.discounts || planData.discount || [];
+        if (durations.length > 0) setSelectedMonths(durations[0].duration);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch Plan Error:", err);
       } finally {
         setLoading(false);
       }
@@ -52,194 +38,205 @@ export default function Checkout() {
     fetchPlan();
   }, [planId]);
 
-  const actualPrice = Number(plan?.actualPrice || 0);
-  const months = Number(selectedMonths || 0);
-  const selectedDiscount = plan?.discounts?.find((d) => d.duration === months);
-
-  const baseTotal = actualPrice * months;
-  const discountAmount = selectedDiscount ? (baseTotal * selectedDiscount.discountPercent) / 100 : 0;
-  const promoAmount = (baseTotal * promoDiscount) / 100;
-  const taxableAmount = baseTotal - discountAmount - promoAmount;
-  const gstAmount = (taxableAmount * GST_PERCENT) / 100;
-  const finalAmount = taxableAmount + gstAmount;
-  const BASE_URL = import.meta.env.VITE_API_URL;
-
-  const handleApplyPromo = () => {
-    if (promoCode.toUpperCase() === "FIRST10" && isFirstTime) {
-      setPromoDiscount(10);
-    } else {
-      alert("Invalid code");
-      setPromoDiscount(0);
-    }
-  };
+  useEffect(() => {
+    const updateCalculations = async () => {
+      if (!selectedMonths || !planId || !instituteId) return;
+      setCalcLoading(true);
+      try {
+        const res = await axios.post(`${BASE_URL}/billing/calculate/${instituteId}/${planId}`, {
+          months: Number(selectedMonths),
+          promoCode: promoCode
+        });
+        if (res.data && res.data.finalAmount > 0) setTotals(res.data);
+      } catch (err) {
+        console.error("Calculation Error:", err.response?.data);
+      } finally {
+        setCalcLoading(false);
+      }
+    };
+    const debounce = setTimeout(updateCalculations, 300);
+    return () => clearTimeout(debounce);
+  }, [selectedMonths, promoCode, instituteId, planId]);
 
   const handleCheckout = async () => {
     try {
-      if (!selectedMonths) return;
-      await axios.post(
-       `${BASE_URL}/billing/create-and-activate/${instituteId}/${planId}`,
-        { months: selectedMonths, promoCode: promoCode || "" }
-      );
-      alert("Plan Activated!");
-      navigate("/dashboard/settings/plans");
-    } catch (err) { console.error(err); }
+      setIsProcessing(true);
+      await axios.post(`${BASE_URL}/billing/create-and-activate/${instituteId}/${planId}`, {
+        months: Number(selectedMonths),
+        promoCode: promoCode
+      });
+      setShowSuccessModal(true);
+    } catch (err) {
+      alert(err.response?.data?.message || "Activation Failed");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FDFDFF]">
-      <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin"></div>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <Loader2 className="w-6 h-6 text-slate-200 animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFDFF] text-slate-700 font-sans selection:bg-indigo-50 selection:text-indigo-600">
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-[-5%] right-[-5%] w-[30%] h-[30%] bg-blue-50/60 rounded-full blur-[80px]" />
-        <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-indigo-50/60 rounded-full blur-[80px]" />
-      </div>
+    <div className="min-h-screen bg-[#FAFBFC] text-slate-600 font-sans antialiased">
+      
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px] p-6">
+          <div className="bg-white rounded-2xl p-10 max-w-sm w-full shadow-xl border border-slate-100 text-center">
+            <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={28} className="text-emerald-500" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Plan Activated</h2>
+            <p className="text-slate-500 text-sm mb-8">
+              Your institute has been successfully upgraded to the <b>{plan?.name}</b> plan.
+            </p>
+            <button 
+              onClick={() => navigate("/dashboard/settings/plans")} 
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
 
-      <nav className="max-w-5xl mx-auto px-6 py-10 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-sm">
-          <ArrowLeft size={16} />
-          <span>Plans</span>
+      {/* NAVIGATION */}
+      <nav className="max-w-5xl mx-auto px-6 py-8 flex justify-between items-center">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors text-sm font-medium">
+          <ArrowLeft size={16} /> Back
         </button>
-        <div className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-100 rounded-full shadow-sm">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm">
           <ShieldCheck size={14} className="text-emerald-500" />
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">PCI Compliant</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Secure Checkout</span>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 grid md:grid-cols-12 gap-12 pb-20">
+      <main className="max-w-5xl mx-auto px-6 grid lg:grid-cols-12 gap-12 pb-24">
         
-        <div className="md:col-span-7">
-          <header className="mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-500 rounded-lg text-[10px] font-bold tracking-widest mb-4 uppercase">
-              <Sparkles size={12} /> Secure Checkout
-            </div>
-            <h1 className="text-2xl font-medium text-slate-900 mb-2 tracking-tight">Select your billing cycle</h1>
-            <p className="text-sm text-slate-500 leading-relaxed font-normal">Choose how often you'd like to be billed for {plan?.name}.</p>
-          </header>
+        {/* LEFT SECTION */}
+        <div className="lg:col-span-7">
+          <div className="mb-10">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Billing Cycle</h1>
+            <p className="text-slate-500 text-sm">Select your preferred subscription duration.</p>
+          </div>
 
           <div className="space-y-3">
-            {plan?.discounts?.map((d) => {
-              const isActive = selectedMonths === d.duration;
-              const perMonth = (plan.price * (1 - d.discountPercent / 100)).toFixed(0);
+            {(plan?.discounts || plan?.discount || []).map((d) => {
+              const isActive = Number(selectedMonths) === Number(d.duration);
+              const basePrice = plan.actualPrice || 299;
+              const discountedMonthly = basePrice - (basePrice * d.discountPercent / 100);
+
               return (
-                <div
-                  key={d.duration}
+                <div 
+                  key={d.duration} 
                   onClick={() => setSelectedMonths(d.duration)}
-                  className={`relative p-5 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden
-                    ${isActive 
-                      ? "border-indigo-500 bg-white shadow-md shadow-indigo-100/50" 
-                      : "border-slate-100 bg-white hover:border-slate-200"}`}
+                  className={`p-5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                    isActive 
+                    ? "border-indigo-600 bg-white shadow-sm ring-1 ring-indigo-600" 
+                    : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
                 >
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all
-                        ${isActive ? "border-indigo-500 bg-indigo-500 shadow-inner" : "border-slate-200"}`}>
-                        {isActive && <CheckCircle2 className="text-white w-2.5 h-2.5" strokeWidth={4} />}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-medium ${isActive ? "text-slate-900" : "text-slate-600"}`}>{d.duration} Months</span>
-                          {d.discountPercent > 0 && (
-                            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase">-{d.discountPercent}%</span>
-                          )}
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isActive ? "border-indigo-600 bg-indigo-600 shadow-sm" : "border-slate-300"}`}>
+                      {isActive && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-900">₹{perMonth}<span className="text-xs text-slate-400 font-normal"> /mo</span></p>
+                    <div>
+                      <h3 className={`text-sm font-semibold ${isActive ? "text-slate-900" : "text-slate-700"}`}>{d.duration} Months</h3>
+                      {d.discountPercent > 0 && (
+                        <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md mt-1 inline-block uppercase">Save {d.discountPercent}%</span>
+                      )}
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-slate-900">₹{Math.round(discountedMonthly)}<span className="text-xs font-normal text-slate-400">/mo</span></p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-10 flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 items-start">
-            <div className="p-2 bg-white rounded-lg border border-slate-100 shrink-0">
-               <CreditCard size={16} className="text-slate-400" />
+          {/* PAYMENT METHODS ICONS */}
+          <div className="mt-12 pt-8 border-t border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Payment Methods Supported</p>
+            <div className="flex flex-wrap gap-4 items-center grayscale opacity-60">
+              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                <CreditCard size={14} /> <span className="text-[11px] font-medium">Debit/Credit Card</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                <Landmark size={14} /> <span className="text-[11px] font-medium">Net Banking</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                <Wallet size={14} /> <span className="text-[11px] font-medium">UPI / Wallets</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed font-light">
-              Your subscription starts immediately. Tax invoices are sent to your registered email. You can cancel or upgrade your plan anytime from the billing settings.
-            </p>
           </div>
         </div>
 
-        {/* Summary Area */}
-        <div className="md:col-span-5">
-          <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm sticky top-10">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-[2px] mb-8 flex items-center justify-between">
-              Order Detail <Lock size={12} />
+        {/* RIGHT SECTION (SUMMARY) */}
+        <div className="lg:col-span-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm sticky top-10">
+            <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px] mb-8 flex items-center justify-between">
+              Order Summary <Lock size={12} />
             </h2>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Plan</span>
-                <span className="text-slate-900 font-medium">{plan?.name}</span>
-              </div>
-              <div className="flex justify-between text-sm font-light">
-                <span className="text-slate-500">Base total</span>
-                <span className="text-slate-900 font-medium">₹{baseTotal.toLocaleString()}</span>
-              </div>
-              {discountAmount > 0 && (
+
+            {!totals ? (
+              <div className="py-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-slate-200" /></div>
+            ) : (
+              <div className="space-y-4 mb-8">
                 <div className="flex justify-between text-sm">
-                  <span className="text-indigo-600 font-medium">Plan savings</span>
-                  <span className="text-indigo-600 font-semibold">-₹{discountAmount.toLocaleString()}</span>
+                  <span className="text-slate-400">Selected Plan</span>
+                  <span className="font-semibold text-slate-800">{plan?.name}</span>
                 </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">GST (18%)</span>
-                <span className="text-slate-900 font-medium">₹{gstAmount.toFixed(0)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Taxes (GST 18%)</span>
+                  <span className="font-semibold text-slate-800">₹{totals.gstAmount.toLocaleString()}</span>
+                </div>
+                
+                <div className="pt-6 border-t border-slate-50 flex justify-between items-baseline">
+                  <span className="text-sm font-bold text-slate-900">Total Amount</span>
+                  <span className={`text-3xl font-bold text-slate-900 tracking-tight ${calcLoading ? "opacity-30" : ""}`}>
+                    ₹{totals.finalAmount.toLocaleString()}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Promo code area - compact */}
-            <div className="relative mb-8">
-              <input
-                type="text"
-                placeholder="PROMO CODE"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-10 pr-20 text-xs font-medium focus:outline-none focus:bg-white focus:border-indigo-300 transition-all uppercase tracking-wider"
+            <div className="relative mb-6">
+              <input 
+                type="text" 
+                placeholder="PROMO CODE" 
+                value={promoCode} 
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:bg-white focus:border-indigo-200 transition-all placeholder:text-slate-300 tracking-widest" 
               />
-              <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
-              <button 
-                onClick={handleApplyPromo}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-indigo-600 px-3 py-1.5 hover:bg-indigo-50 rounded-lg transition-colors"
-              >
-                APPLY
-              </button>
+              <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-indigo-600">APPLY</button>
             </div>
 
-            <div className="pt-6 border-t border-slate-50 mb-8">
-              <div className="flex justify-between items-end">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Payable</span>
-                <span className="text-2xl font-medium text-slate-900">₹{finalAmount.toFixed(0)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleCheckout}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl text-sm font-medium transition-all shadow-lg shadow-slate-200 flex items-center justify-center gap-2 group"
+            <button 
+              onClick={handleCheckout} 
+              disabled={isProcessing || calcLoading || !totals}
+              className={`w-full py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                isProcessing || !totals 
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-50"
+              }`}
             >
-              Complete Payment
-              <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              {isProcessing ? "Processing Payment..." : "Complete Activation"}
+              {!isProcessing && <ChevronRight size={16} />}
             </button>
 
-            {/* Payment footer */}
-            <div className="mt-8 flex flex-col items-center gap-4">
-              <div className="flex gap-5 grayscale opacity-30 hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/UPI-Logo.png" className="h-3" alt="UPI" />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" className="h-2" alt="Visa" />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/Rupay-Logo.png" className="h-3" alt="Rupay" />
-              </div>
-              <p className="text-[10px] text-slate-300 font-medium uppercase tracking-[1px]">Payment handled by Razorpay</p>
+            <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-50 pt-6">
+              <Info size={12} className="text-slate-300" />
+              <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                Immediate activation after payment.
+              </p>
             </div>
           </div>
         </div>
       </main>
     </div>
-  ); 
+  );
 }

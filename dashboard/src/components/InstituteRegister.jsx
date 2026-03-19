@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function InstituteRegister() {
   const [formData, setFormData] = useState({
@@ -101,7 +102,7 @@ export default function InstituteRegister() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
+  
       <nav className="bg-white border-b border-slate-300">
         <div className="max-w-7xl mx-auto px-4 md:px-10 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -113,12 +114,12 @@ export default function InstituteRegister() {
             <h1 className="text-2xl font-bold text-blue-700">INSTITUTE</h1>
           </div>
           <div>
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-md shadow font-medium"
             >
               Login
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -277,9 +278,9 @@ export default function InstituteRegister() {
             {/* Already have account */}
             <p className="text-sm text-center mt-2 text-slate-600">
               Already have an account?{" "}
-              <a href="/login" className="text-indigo-600 font-semibold hover:underline">
+               <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
                 Login
-              </a>
+              </Link>
             </p>
 
             {/* Submit */}

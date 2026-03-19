@@ -13,7 +13,7 @@ export default function DashboardLayout() {
       <Sidebar open={open} setOpen={setOpen} />
 
       <div
-        className={`flex-1 min-h-screen bg-[#f6f5fa] transition-all duration-300 ${
+        className={`flex-1 min-h-screen bg-white transition-all duration-300 ${
          
           open ? "lg:ml-64 ml-0" : "ml-0"
         }`}

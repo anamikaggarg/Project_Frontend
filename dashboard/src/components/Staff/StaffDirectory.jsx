@@ -1,333 +1,234 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, X, Trash2 } from "lucide-react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom"; 
+import { Search, Plus, Trash2, Pencil, UserCircle } from "lucide-react";
+import StaffModal from "./staffModal"; 
 
-export default function StaffDirectory() {
-  const API = "http://localhost:1234/api/staff";
+export default function ProfessionalDirectory() {
+  const navigate = useNavigate();
+  const API = import.meta.env.VITE_API_URL + "/api/staff";
 
-  const [staff, setStaff] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [staff, setStaff] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [staffType, setStaffType] = useState("Teaching");
 
-  const emptyForm = {
-    InstituteId: "INS-1001",
-    InstituteName: "Smart Institute",
-    ReferenceName: "Admin",
-    firstName: "",
-    LastName: "",
-    email: "",
-    ContactNumber: "",
-    UserRole: "",
-    subject: "",
-    classTeacher: "",
-    Gender: "",
-    BloodGroup: "",
-    Dob: "",
-    Address: "",
-    Country: "India",
-    State: "",
-    HighestQualification: "",
-    AppointmentDate: "",
-    status: "Active",
+  const [sections, setSections] = useState({ 
+    basic: true, employment: false, additional: false, experience: false, bank: false 
+  });
+
+  const [experienceList, setExperienceList] = useState([{ PrevInstituteName: "", PrevJobTitle: "", PrevJoiningDate: "" }]);
+
+  const initialFormState = {
+    firstName: "", LastName: "", middleName: "", EmployeeId: "", UserRole: "",
+    Email: "", ContactNumber: "", Gender: "", Dob: "",
+    JobTitle: "", Designation: "", Department: "", EmploymentType: "", AppointmentDate: "",
+    AadharNumber: "", PANNumber: "", Religion: "", Category: "", FatherName: "", MotherName: "",
+    MaritalStatus: "", SpouseName: "", EmergencyContact: "",
+    BankName: "", BankAccountNumber: "", IFSC: "", AccountHolder: ""
   };
 
-  const [formData, setFormData] = useState(emptyForm);
-
-  useEffect(() => {
-    fetchStaff();
-  }, []);
+  const [formData, setFormData] = useState(initialFormState);
 
   const fetchStaff = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(`${API}/allStaff`);
-      const data = await res.json();
-      setStaff(data.staff || []);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
+      const res = await axios.get(`${API}/allStaff`);
+      setStaff(res.data.staff || []);
+    } catch (err) { console.error("Fetch Error:", err); }
+  };
+
+  useEffect(() => { fetchStaff(); }, []);
+
+  const toggleSection = (sectionName) => {
+    setSections(prev => ({ ...prev, [sectionName]: !prev[sectionName] }));
+  };
+
+  const toggleModal = () => {
+    setShowModal(!showModal);
+    if (!showModal) {
+      setFormData(initialFormState);
+      setExperienceList([{ PrevInstituteName: "", PrevJobTitle: "", PrevJoiningDate: "" }]);
+      setPreview(null);
+      setIsEditing(false);
+      setEditId(null);
+      setSections({ basic: true, additional: false, experience: false, bank: false });
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleEdit = (e, member) => {
+    e.stopPropagation();
+    setFormData({ ...member });
+    setExperienceList(member.experience?.length ? member.experience : [{ PrevInstituteName: "", PrevJobTitle: "", PrevJoiningDate: "" }]);
+    setEditId(member._id);
+    setIsEditing(true);
+    setShowModal(true);
   };
 
-  const handleSubmit = async () => {
-    if (!formData.firstName || !formData.ContactNumber) {
-      alert("First Name and Phone required");
-      return;
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if(window.confirm("Are you sure you want to delete this staff?")) {
+        try {
+            await axios.delete(`${API}/deleteStaff/${id}`);
+            fetchStaff();
+        } catch (err) { alert("Error deleting staff",err); }
     }
+  };
 
+  // --- UPDATED OPEN PROFILE (Using EmployeeId) ---
+  const openProfile = (empId) => {
+    if (!empId) return alert("Employee ID not found for this member");
+    navigate(`/dashboard/staff/${empId}`); 
+  };
+
+  const saveStaff = async () => {
     try {
-      const res = await fetch(`${API}/addStaff`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      console.log("ADD STAFF RESPONSE:", data);
+      const cleanExp = experienceList.filter(exp => exp.PrevInstituteName?.trim() !== "");
+      const finalPayload = { ...formData, experience: cleanExp };
 
-      if (data.success) {
-        alert("Staff Added Successfully");
-        fetchStaff();
-        setFormData(emptyForm);
-        setShowAddStaff(false);
+      let res;
+      if (isEditing) {
+        res = await axios.put(`${API}/updateStaff/${editId}`, finalPayload);
       } else {
-        alert(data.error);
+        res = await axios.post(`${API}/addStaff`, finalPayload);
+      }
+
+      if (res.data.success) {
+        fetchStaff();
+        toggleModal();
       }
     } catch (err) {
-      console.log(err);
+      const serverError = err.response?.data?.error || "Error saving data";
+      alert(`Backend Error: ${serverError}`);
     }
   };
 
-  const deleteStaff = async (id) => {
-    if (!window.confirm("Delete this staff?")) return;
-    try {
-      await fetch(`${API}/deleteStaff/${id}`, { method: "DELETE" });
-      fetchStaff();
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  const filteredStaff = staff.filter((member) => {
+    const query = search.toLowerCase();
+    const matchesSearch = 
+      member.firstName?.toLowerCase().includes(query) || 
+      member.LastName?.toLowerCase().includes(query) ||
+      member.EmployeeId?.toLowerCase().includes(query);
 
-  const filteredStaff = (staff || []).filter((s) =>
-    `${s.firstName} ${s.LastName} ${s.UserRole}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+    const role = member.UserRole?.toLowerCase() || "";
+    const isTeacher = role === "teacher" || role === "faculty";
+    const matchesType = staffType === "Teaching" ? isTeacher : !isTeacher;
+
+    return matchesSearch && matchesType;
+  });
 
   return (
-    <div className="p-8 bg-slate-100 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Staff Directory</h1>
-          <p className="text-gray-500">Manage school staff</p>
+    <div className="min-h-screen bg-white">
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-3xl text-slate-800 font-semibold tracking-tight">Staff Directory</h1>
+            <p className="text-slate-500 mt-1">Manage and update your institute personnel</p>
+          </div>
+          <button onClick={toggleModal} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all font-bold">
+            <Plus size={18} /> Add Staff
+          </button>
         </div>
-        <button
-          onClick={() => setShowAddStaff(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
-          <Plus size={18} />
-          Add Staff
-        </button>
-      </div>
 
-      {/* Search */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="relative w-80">
-          <Search className="absolute left-3 top-3 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search staff..."
-            className="pl-10 border rounded-lg py-2 w-full"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-     {/* Table */}
-<div className="bg-white rounded-lg shadow overflow-x-auto">
-  <table className="w-full min-w-[700px] border-collapse">
-    <thead className="bg-blue-50">
-      <tr>
-        <th className="p-4 text-left text-sm font-medium text-blue-700">Name</th>
-        <th className="p-4 text-left text-sm font-medium text-blue-700">Email</th>
-        <th className="p-4 text-left text-sm font-medium text-blue-700">Phone</th>
-        <th className="p-4 text-left text-sm font-medium text-blue-700">Role</th>
-        <th className="p-4 text-center text-sm font-medium text-blue-700">Status</th>
-        <th className="p-4 text-center text-sm font-medium text-blue-700">Action</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {loading ? (
-        <tr>
-          <td colSpan="6" className="text-center p-6 text-gray-500">
-            Loading...
-          </td>
-        </tr>
-      ) : filteredStaff.length > 0 ? (
-        filteredStaff.map((s) => (
-          <tr
-            key={s._id}
-            className="border-b hover:bg-blue-50 transition-colors duration-200"
-          >
-            <td className="p-4 flex items-center gap-2">
-              {/* <div className="bg-blue-200 text-blue-700 rounded-full w-8 h-8 flex items-center justify-center font-semibold uppercase">
-                {s.firstName[0]}
-              </div> */}
-              <span>{s.firstName} {s.LastName}</span>
-            </td>
-            <td className="p-4 text-gray-600 truncate">{s.email}</td>
-            <td className="p-4 text-gray-600">{s.ContactNumber}</td>
-            <td className="p-4 text-gray-600">{s.UserRole}</td>
-            <td className="p-4 text-center">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                s.status === "Active"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}>
-                {s.status}
-              </span>
-            </td>
-            <td className="p-4 text-center">
-              <button
-                onClick={() => deleteStaff(s._id)}
-                className="text-red-500 hover:text-red-700 transition-colors"
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex gap-3">
+            {["Teaching", "NonTeaching"].map((type) => (
+              <button 
+                key={type}
+                onClick={() => setStaffType(type)} 
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${staffType === type ? "bg-slate-800 text-white shadow-md" : "bg-white border text-slate-500 hover:bg-slate-50"}`}
               >
-                <Trash2 size={18} />
+                {type === "Teaching" ? "Teaching Staff" : "Non Teaching Staff"}
               </button>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan="6" className="text-center p-6 text-gray-500">
-            No Staff Found
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
-
-      {/* Add Staff Drawer */}
-      {showAddStaff && (
-        <div className="fixed inset-0 bg-black/40 flex justify-end">
-          <div className="w-[500px] bg-white h-screen p-6 overflow-y-auto">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-semibold">Add Staff</h2>
-              <X
-                onClick={() => setShowAddStaff(false)}
-                className="cursor-pointer"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label>First Name</label>
-                <input
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Last Name</label>
-                <input
-                  name="LastName"
-                  value={formData.LastName}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Email</label>
-                <input
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Phone</label>
-                <input
-                  name="ContactNumber"
-                  value={formData.ContactNumber}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Role</label>
-                <select
-                  name="UserRole"
-                  value={formData.UserRole}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                >
-                  <option value="">Select Role</option>
-                  <option>Teacher</option>
-                  <option>Receptionist</option>
-                  <option>Accountant</option>
-                </select>
-              </div>
-
-              <div>
-                <label>Subject</label>
-                <input
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Qualification</label>
-                <input
-                  name="HighestQualification"
-                  value={formData.HighestQualification}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Date of Birth</label>
-                <input
-                  type="date"
-                  name="Dob"
-                  value={formData.Dob}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-
-              <div>
-                <label>Gender</label>
-                <select
-                  name="Gender"
-                  value={formData.Gender}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                >
-                  <option value="">Select</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                </select>
-              </div>
-
-              <div>
-                <label>Address</label>
-                <textarea
-                  name="Address"
-                  value={formData.Address}
-                  onChange={handleChange}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-lg"
-            >
-              Add Staff
-            </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
+            <input 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              placeholder={`Search in ${staffType}...`} 
+              className="w-full bg-white shadow-sm border border-slate-200 pl-12 pr-4 py-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all" 
+            />
           </div>
         </div>
-      )}
+
+        <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50/50 text-[11px] uppercase text-slate-400 font-black tracking-widest border-b border-slate-100">
+              <tr>
+                <th className="px-8 py-5 text-center w-20">Profile</th>
+                <th className="px-4 py-5">Staff Member</th>
+                <th className="px-8 py-5">Role & Dept</th>
+                <th className="px-8 py-5">Contact</th>
+                <th className="px-8 py-5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredStaff.map((member) => (
+                <tr 
+                  key={member._id} 
+                  onClick={() => openProfile(member.EmployeeId)} // Trigger by EmployeeId
+                  className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                >
+                  <td className="px-8 py-4">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openProfile(member.EmployeeId); }}
+                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-all"
+                    >
+                      <UserCircle size={24} />
+                    </button>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold border border-slate-200 uppercase">
+                        {member.firstName?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-700">{member.firstName} {member.LastName}</p>
+                        <p className="text-xs text-slate-400">ID: {member.EmployeeId}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-4">
+                    <p className="text-sm font-semibold text-slate-600">{member.UserRole}</p>
+                    {/* <p className="text-[10px] text-slate-400 uppercase font-bold">{member.Department || 'No Dept'}</p> */}
+                  </td>
+                  <td className="px-8 py-4 text-slate-600 text-sm font-medium">{member.ContactNumber}</td>
+                  <td className="px-8 py-4 text-right">
+                    <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                      <button 
+                        onClick={(e) => handleEdit(e, member)} 
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      >
+                        <Pencil size={18}/>
+                      </button>
+                      <button 
+                        onClick={(e) => handleDelete(e, member._id)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={18}/>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        
+        </div>
+      </main>
+
+      <StaffModal 
+        isOpen={showModal} onClose={toggleModal} isEditing={isEditing}
+        formData={formData} setFormData={setFormData}
+        preview={preview} setPreview={setPreview}
+        sections={sections} toggleSection={toggleSection}
+        experienceList={experienceList} setExperienceList={setExperienceList}
+        onSave={saveStaff}
+      />
     </div>
   );
 }
