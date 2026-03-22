@@ -1,5 +1,5 @@
 import React from "react";
-import { X, ChevronDown, Camera, Upload, DownloadCloud, PlusCircle } from "lucide-react";
+import { X, ChevronDown, Camera, Upload, DownloadCloud, PlusCircle, Check } from "lucide-react"; // Added Check
 
 // --- REUSABLE INTERNAL COMPONENTS ---
 const FormInput = ({ label, name, type = "text", placeholder, value, onChange }) => (
@@ -48,7 +48,8 @@ const StaffModal = ({
   toggleSection,
   experienceList,
   setExperienceList,
-  onSave
+  onSave,
+  availableClasses // Yeh prop Parent se aa raha hai
 }) => {
   if (!isOpen) return null;
 
@@ -72,6 +73,16 @@ const StaffModal = ({
     setExperienceList(experienceList.filter((_, i) => i !== index));
   };
 
+  // --- LOGIC: Toggle Class Allotment ---
+  const handleClassToggle = (cls) => {
+    const currentClasses = formData.assignedClasses || [];
+    const updatedClasses = currentClasses.includes(cls)
+      ? currentClasses.filter((c) => c !== cls)
+      : [...currentClasses, cls];
+    
+    setFormData({ ...formData, assignedClasses: updatedClasses });
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="bg-white w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-[32px] shadow-2xl flex flex-col border border-white">
@@ -83,31 +94,14 @@ const StaffModal = ({
         </div>
 
         <div className="p-8 overflow-y-auto space-y-10">
-          {/* BULK UPDATE (Only shown when adding new) */}
-          {!isEditing && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center px-1">
-                {/* <h3 className="font-bold text-slate-800">Bulk Update</h3> */}
-                <button className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:underline">
-                  Download Sample List <DownloadCloud size={16} />
-                </button>
-              </div>
-             
-             
-            </div>
-          )}
-
+          {/* Photo Upload Section */}
           <div className="space-y-8">
-            <h3 className="font-bold text-slate-800 px-1">Add Staff Manually</h3>
-            
-            {/* Photo Upload */}
             <div className="flex items-center gap-6 p-2">
               <div className="w-20 h-20 rounded-2xl bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-slate-300 overflow-hidden">
                 {preview ? <img src={preview} className="w-full h-full object-cover" alt="Preview" /> : <Camera size={28}/>}
               </div>
               <div className="space-y-1">
                 <p className="font-bold text-sm text-slate-700">Upload passport size photo</p>
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">(Max 10MB | .PNG, .JPG)</p>
                 <div className="flex gap-4 pt-2">
                   <label className="text-xs text-blue-600 font-bold cursor-pointer hover:underline">
                     Upload <input type="file" className="hidden" onChange={(e) => setPreview(URL.createObjectURL(e.target.files[0]))}/>
@@ -117,7 +111,39 @@ const StaffModal = ({
               </div>
             </div>
 
-            <p className="text-emerald-500 text-[11px] font-bold uppercase tracking-widest px-1">User can be added via mobile number, email ID or both</p>
+            {/* --- NEW: CLASS ALLOTMENT SECTION (SNEHA KO ALLOT KRNE K LIYE) --- */}
+            <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="font-bold text-slate-800">Class Allotment</h3>
+                  <p className="text-xs text-slate-500 italic">Select classes assigned to {formData.firstName || 'this staff member'}</p>
+                </div>
+                <div className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                  {formData.assignedClasses?.length || 0} Classes Selected
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                {availableClasses?.map((cls) => {
+                  const isSelected = formData.assignedClasses?.includes(cls);
+                  return (
+                    <button
+                      key={cls}
+                      type="button"
+                      onClick={() => handleClassToggle(cls)}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 transition-all duration-200 font-bold text-sm ${
+                        isSelected
+                          ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 scale-105"
+                          : "bg-white border-slate-200 text-slate-500 hover:border-blue-400 active:scale-95"
+                      }`}
+                    >
+                      {cls}
+                      {isSelected && <Check size={14} strokeWidth={3} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* 1. BASIC DETAILS */}
             <div className="border border-slate-100 rounded-[24px] bg-white shadow-sm overflow-hidden">

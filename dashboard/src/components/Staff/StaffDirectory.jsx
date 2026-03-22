@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; 
-import { Search, Plus, Trash2, Pencil, UserCircle } from "lucide-react";
+import { Search, Plus, Trash2, Pencil, UserCircle, ChevronDown, Check, X, Mail, Phone } from "lucide-react";
 import StaffModal from "./staffModal"; 
 
 export default function ProfessionalDirectory() {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_URL + "/api/staff";
+  const dropdownRef = useRef(null);
 
+  // --- States ---
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -15,6 +17,10 @@ export default function ProfessionalDirectory() {
   const [staff, setStaff] = useState([]);
   const [preview, setPreview] = useState(null);
   const [staffType, setStaffType] = useState("Teaching");
+
+  const [selectedClasses, setSelectedClasses] = useState([]);
+  const [isClassOpen, setIsClassOpen] = useState(false);
+  const availableClasses = ["12 - A", "12 - B", "12 - C", "11 - A", "11 - B", "10 - A"];
 
   const [sections, setSections] = useState({ 
     basic: true, employment: false, additional: false, experience: false, bank: false 
@@ -28,11 +34,13 @@ export default function ProfessionalDirectory() {
     JobTitle: "", Designation: "", Department: "", EmploymentType: "", AppointmentDate: "",
     AadharNumber: "", PANNumber: "", Religion: "", Category: "", FatherName: "", MotherName: "",
     MaritalStatus: "", SpouseName: "", EmergencyContact: "",
-    BankName: "", BankAccountNumber: "", IFSC: "", AccountHolder: ""
+    BankName: "", BankAccountNumber: "", IFSC: "", AccountHolder: "",
+    assignedClasses: []
   };
 
   const [formData, setFormData] = useState(initialFormState);
 
+  // --- FETCH DATA ---
   const fetchStaff = async () => {
     try {
       const res = await axios.get(`${API}/allStaff`);
@@ -41,6 +49,35 @@ export default function ProfessionalDirectory() {
   };
 
   useEffect(() => { fetchStaff(); }, []);
+
+  // --- LOGIC: Outside Click for Dropdown ---
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsClassOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownRef]);
+
+  // --- FILTER LOGIC ---
+  const filteredStaff = staff.filter((member) => {
+    const query = search.toLowerCase();
+    const matchesSearch = 
+      member.firstName?.toLowerCase().includes(query) || 
+      member.LastName?.toLowerCase().includes(query) ||
+      member.EmployeeId?.toLowerCase().includes(query);
+
+    const role = member.UserRole?.toLowerCase() || "";
+    const isTeacher = role === "teacher" || role === "faculty";
+    const matchesType = staffType === "Teaching" ? isTeacher : !isTeacher;
+
+    const matchesClass = selectedClasses.length === 0 || 
+      (member.assignedClasses && member.assignedClasses.some(cls => selectedClasses.includes(cls)));
+
+    return matchesSearch && matchesType && matchesClass;
+  });
 
   const toggleSection = (sectionName) => {
     setSections(prev => ({ ...prev, [sectionName]: !prev[sectionName] }));
@@ -54,7 +91,7 @@ export default function ProfessionalDirectory() {
       setPreview(null);
       setIsEditing(false);
       setEditId(null);
-      setSections({ basic: true, additional: false, experience: false, bank: false });
+      setSections({ basic: true, employment: false, additional: false, experience: false, bank: false });
     }
   };
 
@@ -73,13 +110,12 @@ export default function ProfessionalDirectory() {
         try {
             await axios.delete(`${API}/deleteStaff/${id}`);
             fetchStaff();
-        } catch (err) { alert("Error deleting staff",err); }
+        } catch (err) { alert("Error deleting staff"); }
     }
   };
 
-  // --- UPDATED OPEN PROFILE (Using EmployeeId) ---
   const openProfile = (empId) => {
-    if (!empId) return alert("Employee ID not found for this member");
+    if (!empId) return alert("Employee ID not found");
     navigate(`/dashboard/staff/${empId}`); 
   };
 
@@ -87,137 +123,198 @@ export default function ProfessionalDirectory() {
     try {
       const cleanExp = experienceList.filter(exp => exp.PrevInstituteName?.trim() !== "");
       const finalPayload = { ...formData, experience: cleanExp };
-
       let res;
       if (isEditing) {
         res = await axios.put(`${API}/updateStaff/${editId}`, finalPayload);
       } else {
         res = await axios.post(`${API}/addStaff`, finalPayload);
       }
-
       if (res.data.success) {
         fetchStaff();
         toggleModal();
       }
     } catch (err) {
-      const serverError = err.response?.data?.error || "Error saving data";
-      alert(`Backend Error: ${serverError}`);
+      alert(`Backend Error: ${err.response?.data?.error || "Error saving data"}`);
     }
   };
 
-  const filteredStaff = staff.filter((member) => {
-    const query = search.toLowerCase();
-    const matchesSearch = 
-      member.firstName?.toLowerCase().includes(query) || 
-      member.LastName?.toLowerCase().includes(query) ||
-      member.EmployeeId?.toLowerCase().includes(query);
-
-    const role = member.UserRole?.toLowerCase() || "";
-    const isTeacher = role === "teacher" || role === "faculty";
-    const matchesType = staffType === "Teaching" ? isTeacher : !isTeacher;
-
-    return matchesSearch && matchesType;
-  });
-
   return (
-    <div className="min-h-screen bg-white">
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex justify-between items-center mb-10">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-10">
+        
+        {/* --- HEADER --- */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
           <div>
-            <h1 className="text-3xl text-slate-800 font-semibold tracking-tight">Staff Directory</h1>
-            <p className="text-slate-500 mt-1">Manage and update your institute personnel</p>
+            <h1 className="text-2xl sm:text-3xl text-slate-800 font-bold tracking-tight">Staff Directory</h1>
+            <p className="text-slate-500 mt-1 font-medium">Manage and update institute personnel</p>
           </div>
-          <button onClick={toggleModal} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all font-bold">
+          <button onClick={toggleModal} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all font-bold active:scale-95">
             <Plus size={18} /> Add Staff
           </button>
         </div>
 
+        {/* --- FILTERS --- */}
         <div className="flex flex-col gap-6 mb-8">
-          <div className="flex gap-3">
-            {["Teaching", "NonTeaching"].map((type) => (
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="flex w-full md:w-auto gap-1 bg-slate-200/50 p-1.5 rounded-2xl">
+              {["Teaching", "NonTeaching"].map((type) => (
+                <button 
+                  key={type}
+                  onClick={() => setStaffType(type)} 
+                  className={`flex-1 md:flex-none px-6 py-2 rounded-xl text-[11px] font-black transition-all tracking-wider ${staffType === type ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {type === "Teaching" ? "TEACHING" : "NON TEACHING"}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full md:w-auto" ref={dropdownRef}>
               <button 
-                key={type}
-                onClick={() => setStaffType(type)} 
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${staffType === type ? "bg-slate-800 text-white shadow-md" : "bg-white border text-slate-500 hover:bg-slate-50"}`}
+                onClick={() => setIsClassOpen(!isClassOpen)}
+                className={`w-full md:w-auto flex items-center justify-between gap-3 px-5 py-2.5 border rounded-xl text-sm font-bold shadow-sm transition-all ${selectedClasses.length > 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}
               >
-                {type === "Teaching" ? "Teaching Staff" : "Non Teaching Staff"}
+                <span>{selectedClasses.length > 0 ? `${selectedClasses.length} Selected` : "Class"}</span>
+                <ChevronDown size={16} className={`transition-transform duration-300 ${isClassOpen ? 'rotate-180' : ''}`} />
               </button>
-            ))}
+
+              {isClassOpen && (
+                <div className="absolute left-0 mt-2 w-full md:w-60 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-2 border-b border-slate-50 flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400">Select Classes</span>
+                    {selectedClasses.length > 0 && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedClasses([]); }} 
+                        className="text-[10px] font-bold text-rose-500 hover:underline bg-rose-50 px-2 py-0.5 rounded"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {availableClasses.map((cls) => (
+                      <label key={cls} className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors group">
+                        <div className="relative flex items-center">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedClasses.includes(cls)} 
+                            onChange={() => setSelectedClasses(prev => prev.includes(cls) ? prev.filter(i => i !== cls) : [...prev, cls])}
+                            className="w-5 h-5 appearance-none border-2 border-slate-200 rounded-md checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer" 
+                          />
+                          {selectedClasses.includes(cls) && <Check size={14} className="absolute text-white left-0.5 pointer-events-none" />}
+                        </div>
+                        <span className={`text-sm font-bold ${selectedClasses.includes(cls) ? 'text-blue-600' : 'text-slate-600'}`}>{cls}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
             <input 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
-              placeholder={`Search in ${staffType}...`} 
-              className="w-full bg-white shadow-sm border border-slate-200 pl-12 pr-4 py-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all" 
+              placeholder="Search by name or Employee ID..." 
+              className="w-full bg-white shadow-sm border border-slate-200 pl-12 pr-4 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all font-medium text-sm" 
             />
           </div>
         </div>
 
-        <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
+        {/* --- MOBILE CARDS VIEW --- */}
+        <div className="grid grid-cols-1 gap-4 lg:hidden">
+          {filteredStaff.length > 0 ? (
+            filteredStaff.map((member) => (
+              <div key={member._id} onClick={() => openProfile(member.EmployeeId)} className="bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm active:scale-[0.98] transition-transform">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#eef2ff] text-[#1e40af] flex items-center justify-center font-black border border-blue-100 text-lg shadow-inner">
+                      {member.firstName?.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800">{member.firstName} {member.LastName}</h3>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">ID: {member.EmployeeId}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={(e) => handleEdit(e, member)} className="p-2.5 text-blue-500 bg-blue-50 rounded-xl"><Pencil size={18}/></button>
+                    <button onClick={(e) => handleDelete(e, member._id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl"><Trash2 size={18}/></button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                   <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-lg uppercase tracking-tight">{member.UserRole}</span>
+                   {member.assignedClasses?.map(c => (
+                     <span key={c} className="text-[10px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-100 uppercase">{c}</span>
+                   ))}
+                </div>
+              </div>
+            ))
+          ) : (
+             <div className="p-10 text-center bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 font-bold italic">No results found.</div>
+          )}
+        </div>
+
+        {/* --- DESKTOP TABLE VIEW --- */}
+        <div className="hidden lg:block bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50 text-[11px] uppercase text-slate-400 font-black tracking-widest border-b border-slate-100">
               <tr>
                 <th className="px-8 py-5 text-center w-20">Profile</th>
                 <th className="px-4 py-5">Staff Member</th>
-                <th className="px-8 py-5">Role & Dept</th>
-                <th className="px-8 py-5">Contact</th>
+                <th className="px-8 py-5">Role & Classes</th>
                 <th className="px-8 py-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredStaff.map((member) => (
-                <tr 
-                  key={member._id} 
-                  onClick={() => openProfile(member.EmployeeId)} // Trigger by EmployeeId
-                  className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                >
-                  <td className="px-8 py-4">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); openProfile(member.EmployeeId); }}
-                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-all"
-                    >
-                      <UserCircle size={24} />
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold border border-slate-200 uppercase">
-                        {member.firstName?.charAt(0)}
+              {filteredStaff.length > 0 ? (
+                filteredStaff.map((member) => (
+                  <tr 
+                    key={member._id} 
+                    onClick={() => openProfile(member.EmployeeId)} 
+                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                  >
+                    <td className="px-8 py-4 text-center">
+                      <UserCircle size={24} className="mx-auto text-slate-300 group-hover:text-blue-500 transition-colors" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#eef2ff] text-[#1e40af] flex items-center justify-center font-bold border border-blue-100">
+                          {member.firstName?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-700">{member.firstName} {member.LastName}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ID: {member.EmployeeId}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-700">{member.firstName} {member.LastName}</p>
-                        <p className="text-xs text-slate-400">ID: {member.EmployeeId}</p>
+                    </td>
+                    <td className="px-8 py-4">
+                      <p className="text-sm font-bold text-slate-600">{member.UserRole}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {member.assignedClasses?.length > 0 ? (
+                          member.assignedClasses.slice(0, 3).map(c => (
+                            <span key={c} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-black border border-blue-100 uppercase">{c}</span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-slate-300 italic">General Staff</span>
+                        )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-4">
-                    <p className="text-sm font-semibold text-slate-600">{member.UserRole}</p>
-                    {/* <p className="text-[10px] text-slate-400 uppercase font-bold">{member.Department || 'No Dept'}</p> */}
-                  </td>
-                  <td className="px-8 py-4 text-slate-600 text-sm font-medium">{member.ContactNumber}</td>
-                  <td className="px-8 py-4 text-right">
-                    <div className="flex justify-end gap-2 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                      <button 
-                        onClick={(e) => handleEdit(e, member)} 
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                      >
-                        <Pencil size={18}/>
-                      </button>
-                      <button 
-                        onClick={(e) => handleDelete(e, member._id)}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 size={18}/>
-                      </button>
-                    </div>
-                  </td>
+                    </td>
+                    <td className="px-8 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end gap-2  group-hover:opacity-100 transition-all duration-200">
+                        <button onClick={(e) => handleEdit(e, member)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Pencil size={18}/></button>
+                        <button onClick={(e) => handleDelete(e, member._id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={18}/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="px-8 py-20 text-center text-slate-400 font-bold italic">No staff members found.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-        
         </div>
       </main>
 
@@ -228,6 +325,7 @@ export default function ProfessionalDirectory() {
         sections={sections} toggleSection={toggleSection}
         experienceList={experienceList} setExperienceList={setExperienceList}
         onSave={saveStaff}
+        availableClasses={availableClasses}
       />
     </div>
   );
