@@ -27,7 +27,7 @@ export default function Sidebar({ open, setOpen }) {
       await axios.post(
         `${BASE_URL}/institute/logout`,
         {}, 
-        { withCredentials: true }
+        
       );
       localStorage.removeItem("institute");
       localStorage.clear();
