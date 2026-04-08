@@ -1,312 +1,195 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { Search, Plus, UserCheck, Mail, Phone, BookOpen, X, Loader2 } from "lucide-react";
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { useSelector } from "react-redux";
+import { Search, UserCheck, X, Loader2, CheckCircle } from "lucide-react";
 
-const API_URL = `${BASE_URL}/student/all`;
-const UPDATE_API_URL = `${BASE_URL}/student/updateStudent`;
-const ADD_API_URL = `${BASE_URL}/student/addStudent`;
+// Postman ke mutabik check karein (Localhost vs Render)
+const BASE_URL = "https://institute-backend-0ncp.onrender.com"; 
 
 export default function Students() {
+  const instituteState = useSelector((state) => state.Institute);
+  const instituteId = instituteState?.currentInstitute?.instituteId || "";
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showApproveModal, setShowApproveModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [courses, setCourses] = useState([]);
   const [approving, setApproving] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [newStudent, setNewStudent] = useState({ fullName: "", email: "", contactNo: "" });
 
+  // 1. Fetch Students (Ab hum PENDING aur APPROVED dono dikhayenge)
   useEffect(() => {
     const fetchStudents = async () => {
-     try {
-  const res = await axios.get(API_URL);
-  setStudents(Array.isArray(res.data.students) ? res.data.students : []);
-} catch (err) {
-  console.error("Fetch Students Error:", err);
-  alert(err.response?.data?.message || err.message || "Failed to fetch students");
-  setStudents([]);
-} finally {
-  setLoading(false);
-}
+      if (!instituteId) return;
+      try {
+        setLoading(true);
+        const res = await axios.get(`${BASE_URL}/student/studentsByInstitute/${instituteId}`);
+        const rawData = res.data.students || [];
+
+        const processedData = rawData.map(student => {
+          const instReq = student.appliedInstitutes?.find(i => i.instituteCode === instituteId);
+          return {
+            _id: student._id,
+            fullName: student.fullName || "N/A",
+            email: student.email || "N/A",
+            studentID: student.studentID,
+            status: instReq ? instReq.status.toUpperCase() : "PENDING"
+          };
+        });
+
+        // Yahan se filter hata diya taaki list se gayab na hon
+        setStudents(processedData); 
+      } catch (err) {
+        console.error("Fetch Error:", err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchStudents();
-  }, []);
+  }, [instituteId]);
 
-  useEffect(() => {
-    const institute = JSON.parse(localStorage.getItem("institute") || "{}");
-    setCourses(Array.isArray(institute.courses) && institute.courses.length > 0 
-      ? institute.courses 
-      : ["React JS", "Node JS", "Python", "Data Science"]);
-  }, []);
-
+  // 2. Search Logic
   const filteredStudents = useMemo(() => {
-    const searchLower = search.toLowerCase();
+    const sLower = search.toLowerCase();
     return students.filter(s =>
-      s.fullName?.toLowerCase().includes(searchLower) ||
-      s.email?.toLowerCase().includes(searchLower) ||
-      s.contactNo?.includes(searchLower)
+      s.fullName?.toLowerCase().includes(sLower) ||
+      s.studentID?.toLowerCase().includes(sLower)
     );
   }, [students, search]);
 
-  const handleApproveClick = (student) => {
-    setSelectedStudent(student);
-    setSelectedCourse("");
-    setShowApproveModal(true);
-  };
-
+  // 3. Approve Logic (Update status in UI instead of removing)
   const handleApproveStudent = async () => {
-    if (!selectedCourse) return;
+    if (!selectedStudent || !instituteId) return;
+    
     setApproving(true);
     try {
-      const res = await axios.put(`${UPDATE_API_URL}/${selectedStudent.email}`, 
-        { status: "Approved", course: selectedCourse },
-      );
+      const payload = {
+        studentId: selectedStudent.studentID,
+        instituteId: instituteId
+      };
+
+      const res = await axios.put(`${BASE_URL}/institute/approveStudent`, payload);
+
       if (res.data.success) {
-        setStudents(prev => prev.map(s => s.email === selectedStudent.email ? { ...s, status: "Approved", course: selectedCourse } : s));
+        // UI UPDATE: Student ko remove nahi kar rahe, status badal rahe hain
+        setStudents(prev => prev.map(s => 
+          s.studentID === selectedStudent.studentID 
+          ? { ...s, status: "APPROVED" } 
+          : s
+        ));
+        
         setShowApproveModal(false);
+        alert("Student Approved Successfully!");
       }
     } catch (err) {
-      console.error("Fetch Students Error:", err);
-      alert("Something went wrong");
+      console.error("Error:", err.response?.data);
+      alert(err.response?.data?.message || "Approval failed.");
     } finally {
       setApproving(false);
     }
   };
 
-  const handleAddStudent = async () => {
-    if (!newStudent.fullName || !newStudent.email) return;
-    setAdding(true);
-    try {
-      const res = await axios.post(ADD_API_URL, newStudent, { headers: { "ngrok-skip-browser-warning": "true" } });
-      if (res.data.success) {
-        setStudents(prev => [...prev, res.data.student]);
-        setShowAddModal(false);
-        setNewStudent({ fullName: "", email: "", contactNo: "" });
-      }
-    } catch (err) {
-      console.error("Fetch Students Error:", err);
-    } finally {
-      setAdding(false);
-    }
-  };
-
   if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-      <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-      <p className="text-slate-500 font-medium animate-pulse">Syncing student records...</p>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc]">
+      <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      <p className="mt-4 text-slate-500 font-medium">Loading Students...</p>
     </div>
   );
 
   return (
-    <main className="p-4 md:p-10 bg-slate-50 min-h-screen text-slate-900 font-sans">
+    <main className="p-6 md:p-12 bg-[#f8fafc] min-h-screen">
       <div className="max-w-7xl mx-auto">
-        
-        {/* TOP HEADER SECTION */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Student Directory</h1>
-            <p className="text-slate-500 mt-1">Manage enrollments, approve applications, and track courses.</p>
+            <h1 className="text-2xl font-black text-slate-900">Manage Students</h1>
+            <p className="text-slate-500">Institute ID: <span className="text-indigo-600 font-bold">{instituteId}</span></p>
           </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-grow md:flex-grow-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl w-full md:w-80 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-              />
-            </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Student</span>
-            </button>
+          <div className="relative flex-grow max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search by ID or Name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl w-full outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
           </div>
         </div>
 
-        {/* STATS SUMMARY (Optional but looks great) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Total Students</p>
-                <h3 className="text-2xl font-bold">{students.length}</h3>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Approved</p>
-                <h3 className="text-2xl font-bold text-emerald-600">{students.filter(s => s.status === 'Approved').length}</h3>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <p className="text-slate-500 text-sm font-medium">Pending Review</p>
-                <h3 className="text-2xl font-bold text-amber-500">{students.filter(s => s.status !== 'Approved').length}</h3>
-            </div>
-        </div>
-
-        {/* MAIN TABLE CARD */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact Info</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Course</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+        <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Student</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Student ID</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase">Status</th>
+                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredStudents.map((s) => (
+                <tr key={s.studentID} className="hover:bg-slate-50/50 transition-all">
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 font-bold uppercase">{s.fullName[0]}</div>
+                      <div>
+                        <p className="font-bold text-slate-800">{s.fullName}</p>
+                        <p className="text-xs text-slate-400">{s.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 text-sm font-medium text-slate-600">{s.studentID}</td>
+                  <td className="px-8 py-5">
+                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                      s.status === "APPROVED" 
+                      ? "bg-emerald-50 text-emerald-600" 
+                      : "bg-amber-50 text-amber-600"
+                    }`}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    {s.status === "PENDING" ? (
+                      <button
+                        onClick={() => { setSelectedStudent(s); setShowApproveModal(true); }}
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase hover:bg-indigo-700 shadow-md active:scale-95"
+                      >
+                        Approve
+                      </button>
+                    ) : (
+                      <div className="flex items-center justify-end text-emerald-600 gap-1 text-xs font-bold">
+                        <CheckCircle className="w-4 h-4" /> Done
+                      </div>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredStudents.length > 0 ? filteredStudents.map((s) => (
-                  <tr key={s.email} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <img
-                            src={s.profileImage ? (s.profileImage.startsWith("http") ? s.profileImage : `https://effie-uncandied-dumpily.ngrok-free.dev/${s.profileImage}`) : `https://ui-avatars.com/api/?name=${s.fullName}&background=6366f1&color=fff`}
-                            alt=""
-                            className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm"
-                            />
-                            <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${s.status === 'Approved' ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-800">{s.fullName}</p>
-                          <p className="text-xs text-slate-400 uppercase font-medium">ID: {s.email.split('@')[0]}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <Mail className="w-3.5 h-3.5 text-slate-400" /> {s.email}
-                        </div>
-                        {s.contactNo && (
-                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                                <Phone className="w-3.5 h-3.5 text-slate-400" /> {s.contactNo}
-                            </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide ${
-                        s.status === "Approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-amber-50 text-amber-700 border border-amber-100"
-                      }`}>
-                        {s.status || "Pending"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-700">
-                        {s.course ? (
-                            <div className="flex items-center gap-2">
-                                <BookOpen className="w-4 h-4 text-indigo-400" />
-                                {s.course}
-                            </div>
-                        ) : <span className="text-slate-300 italic">Unassigned</span>}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {s.status === "Approved" ? (
-                        <div className="flex items-center justify-end gap-1 text-emerald-600 font-bold text-sm">
-                            <UserCheck className="w-4 h-4" /> Verified
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleApproveClick(s)}
-                          className="px-4 py-1.5 bg-white border border-slate-200 text-indigo-600 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
-                        >
-                          Approve
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )) : (
-                    <tr>
-                        <td colSpan="5" className="px-6 py-20 text-center">
-                            <div className="flex flex-col items-center opacity-40">
-                                <Search className="w-12 h-12 mb-4" />
-                                <p className="text-xl font-semibold">No students found</p>
-                                <p>Try adjusting your search criteria</p>
-                            </div>
-                        </td>
-                    </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* MODAL COMPONENT (Reusable style) */}
-      {(showApproveModal || showAddModal) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl transform transition-all scale-100">
+      {showApproveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">
-                    {showApproveModal ? "Assign & Approve" : "Add New Student"}
-                </h3>
-                <button 
-                    onClick={() => { setShowApproveModal(false); setShowAddModal(false); }}
-                    className="p-1 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                    <X className="w-5 h-5 text-slate-400" />
-                </button>
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Confirm</h3>
+              <button onClick={() => setShowApproveModal(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-
-            {showApproveModal ? (
-              <>
-                <p className="text-slate-500 mb-6">Select a curriculum to assign to <span className="font-bold text-slate-800">{selectedStudent?.fullName}</span>.</p>
-                <select
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl mb-8 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                >
-                  <option value="">Select a Course</option>
-                  {courses.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </>
-            ) : (
-              <div className="space-y-4 mb-8">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={newStudent.fullName}
-                  onChange={(e) => setNewStudent({ ...newStudent, fullName: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-                <input
-                  type="text"
-                  placeholder="Contact Number"
-                  value={newStudent.contactNo}
-                  onChange={(e) => setNewStudent({ ...newStudent, contactNo: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <UserCheck className="w-10 h-10" />
               </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
+              <p className="text-slate-600">Approve <span className="font-bold text-slate-900">{selectedStudent?.fullName}</span>?</p>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => setShowApproveModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 font-black rounded-2xl">CANCEL</button>
               <button
-                onClick={() => { setShowApproveModal(false); setShowAddModal(false); }}
-                className="px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                onClick={handleApproveStudent}
+                disabled={approving}
+                className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 disabled:opacity-50"
               >
-                Cancel
-              </button>
-              <button
-                onClick={showApproveModal ? handleApproveStudent : handleAddStudent}
-                disabled={approving || adding}
-                className="px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center"
-              >
-                {(approving || adding) ? <Loader2 className="w-5 h-5 animate-spin" /> : (showApproveModal ? "Confirm" : "Add Student")}
+                {approving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "YES, APPROVE"}
               </button>
             </div>
           </div>

@@ -22,6 +22,7 @@ import BillPage from "./components/pages/BillPage";
 import Checkout from "./components/pages/checkout";
 import StaffDirectory from "./components/Staff/StaffDirectory";
 import StaffProfile from "./components/Staff/StaffProfile";
+import CourseDetail from "./components/pages/CourseDetail";
 
 
 
@@ -91,6 +92,7 @@ export default function App() {
           <Route index element={<DashboardHome />} />
           <Route path="students" element={<Students />} />
           <Route path="courses" element={<ManageCourses />} />
+          <Route path="course/:courseId" element={<CourseDetail/>} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="fees" element={<Fees />} />

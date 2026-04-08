@@ -67,7 +67,7 @@ function Login() {
       const res = await axios.post(`${API_URL}/institute/login`, { 
         email: email.trim().toLowerCase(), 
         password 
-      }, { withCredentials: true });
+      },);
       if (res.data.success) handleAuthSuccess(res.data);
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password");
@@ -186,7 +186,7 @@ function Login() {
           </form>
         )}
 
-        {/* --- FORGOT PASSWORD FLOW --- */}
+      
         {view === "forgot" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-left-4">
             <button onClick={() => { if(forgotStep === 1) setView("login"); else setForgotStep(f => f-1); setError(""); }} className="text-slate-500 hover:text-white flex items-center gap-2 text-xs font-bold uppercase">

@@ -49,7 +49,7 @@ const StaffModal = ({
   experienceList,
   setExperienceList,
   onSave,
-  availableClasses // Yeh prop Parent se aa raha hai
+  availableClasses 
 }) => {
   if (!isOpen) return null;
 
