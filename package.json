@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "Staff",
   "private": true,
   "version": "0.0.0",
@@ -37,16 +36,5 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "vite": "^7.3.1"
-=======
-  "name": "frontend",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
->>>>>>> c199358608d1b905076fdec64c7aff74c9d4d83d
   }
 }
