@@ -173,6 +173,7 @@ const StaffModal = ({
                 <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
                   <FormInput label="Aadhar Number" name="AadharNumber" value={formData.AadharNumber} onChange={handleChange} />
                   <FormInput label="PAN Number" name="PANNumber" value={formData.PANNumber} onChange={handleChange} />
+                    <FormInput label="Password" name="password" value={formData.password} onChange={handleChange} />
                   <FormSelect label="Religion" name="Religion" options={["Hindu", "Muslim", "Sikh", "Christian"]} value={formData.Religion} onChange={handleChange} />
                   <FormSelect label="Category" name="Category" options={["General", "OBC", "SC/ST"]} value={formData.Category} onChange={handleChange} />
                   <FormInput label="Father's Name" name="FatherName" value={formData.FatherName} onChange={handleChange} />

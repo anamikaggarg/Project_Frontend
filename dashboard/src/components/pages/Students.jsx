@@ -6,8 +6,8 @@ import { Search, UserCheck, X, Loader2, CheckCircle, GraduationCap, Mail, Credit
 const BASE_URL = "https://institute-backend-0ncp.onrender.com";
 
 export default function Students() {
-  const instituteState = useSelector((state) => state.Institute);
-  const TARGET_INSTITUTE_ID = instituteState?.currentInstitute?.instituteId || "";
+  const instituteState = useSelector((state) => state.User);
+  const TARGET_INSTITUTE_ID = instituteState?.user?.instituteId || "";
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +32,7 @@ export default function Students() {
         });
 
         return {
+          
           _id: student._id,
           fullName: student.fullName || "N/A",
           email: student.email || "N/A",

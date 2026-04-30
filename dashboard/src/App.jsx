@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect,useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setInstitute } from "./redux/slices/institute";
 
 import InstituteRegister from "./components/InstituteRegister";
 import Login from "./components/Login";
@@ -24,30 +23,16 @@ import StaffDirectory from "./components/Staff/StaffDirectory";
 import StaffProfile from "./components/Staff/StaffProfile";
 import CourseDetail from "./components/pages/CourseDetail";
 
-
-
 function PrivateRoute({ children }) {
-  const dispatch = useDispatch();
-  const instituteState = useSelector(state => state.Institute);
-  // const [ready, setReady] = useState(false);
+  const { isauthenticated } = useSelector((state) => state.User);
 
-  useEffect(() => {
-    
-    if (!instituteState?.currentInstitute) {
-      const stored = localStorage.getItem("institute");
-      if (stored) dispatch(setInstitute(JSON.parse(stored)));
-    }
-    // setReady(true);
-  }, [dispatch, instituteState]);
-
-  // if (!ready) return null; // wait until redux state is hydrated
-
-  if (!instituteState?.currentInstitute?.instituteId) {
+  if (!isauthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   return children;
 }
+  
 
 
 function PublicRoute({ children }) {

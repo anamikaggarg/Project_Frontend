@@ -10,7 +10,8 @@ import LockedModal from "./LockedModal";
 
 export default function Sidebar({ open, setOpen }) {
   const navigate = useNavigate();
-  const storedInstitute = JSON.parse(localStorage.getItem("institute"));
+  const storedInstitute = JSON.parse(sessionStorage.getItem("user"));
+  // console.log(storedInstitute)
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   const [institute, setInstitute] = useState(

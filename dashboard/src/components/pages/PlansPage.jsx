@@ -59,7 +59,7 @@ export default function PlansPage() {
     try {
       setLoadingPlans(true);
       const res = await axios.get(`${API_URL}/plans/allPlans`, {
-        headers: { "ngrok-skip-browser-warning": "true" },
+       
       });
       if (res.data && Array.isArray(res.data.plans)) {
         setPlans(res.data.plans);

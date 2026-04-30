@@ -8,6 +8,7 @@ import {
   ChevronLeft, Eye, EyeOff, CheckCircle, 
   KeyRound, UserPlus, AlertCircle 
 } from "lucide-react";
+import { setUser } from "../redux/slices/userSlice";
 
 const InputBox = ({ icon: Icon, error, ...props }) => (
   <div className="relative group animate-in fade-in duration-300">
@@ -51,29 +52,38 @@ function Login() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleAuthSuccess = (data) => {
-    const { institute, token } = data;
-    dispatch(setInstitute(institute));
-    localStorage.setItem("institute", JSON.stringify(institute));
-    localStorage.setItem("token", token); 
-    navigate("/dashboard");
-  };
+  // const handleAuthSuccess = (data) => {
+  //   const { user, token } = data;
+  //   dispatch(setInstitute(user));
+  //   localStorage.setItem("user", JSON.stringify(user));
+  //   localStorage.setItem("token", token); 
+  //   navigate("/dashboard");
+  // };
 
   const handleLogin = async (e) => {
-    if(e) e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await axios.post(`${API_URL}/institute/login`, { 
-        email: email.trim().toLowerCase(), 
-        password 
-      },);
-      if (res.data.success) handleAuthSuccess(res.data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Invalid email or password");
-    } finally { setLoading(false); }
-  };
+  if (e) e.preventDefault();
+  setLoading(true);
+  setError("");
 
+  try {
+    const res = await axios.post(`${API_URL}/institute/login`, {
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (res.data.role === "institute") {
+      dispatch(setUser(res.data.user));
+      navigate("/dashboard");
+    } else if (res.data.role === "staff") {
+      dispatch(setUser(res.data.user)); 
+      window.location.href = "http://localhost:5174/dashboard";
+    }
+  } catch (err) {
+    setError(err.response?.data?.message || "Invalid email or password");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleForgotSendOTP = async (e) => {
     if(e) e.preventDefault();
     setLoading(true);
