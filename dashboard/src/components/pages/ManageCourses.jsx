@@ -140,7 +140,7 @@ export default function ManageCourses() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-semibold font-black text-slate-800 ">
-              {showArchivedOnly ? "Archived Courses" : "Manage Courses"}
+              {showArchivedOnly ? "Archived Courses" : "Manage Tasks"}
             </h1>
             <p className="text-slate-500 font-medium">
               {showArchivedOnly ? "Viewing completed or hidden courses" : "Manage your active school classes"}
@@ -165,7 +165,7 @@ export default function ManageCourses() {
               onClick={() => { setEditingCourse(null); setShowModal(true); }}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
             >
-              <Plus size={18} /> Add Course
+              <Plus size={18} /> Add Task
             </button>
           </div>
         </div>
