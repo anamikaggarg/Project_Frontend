@@ -109,7 +109,7 @@ export default function Students() {
               <div className="p-2 bg-indigo-600 rounded-lg hidden sm:block">
                 <GraduationCap className="text-white w-6 h-6" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase">Student Management</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase">Team Management</h1>
             </div>
             <p className="text-slate-400 text-xs sm:text-sm font-medium">
               Institute ID: <span className="text-indigo-600 font-bold">{TARGET_INSTITUTE_ID}</span>
@@ -133,7 +133,7 @@ export default function Students() {
           <table className="w-full text-left">
             <thead className="bg-slate-50/50 border-b border-slate-100">
               <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Member</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Card</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>

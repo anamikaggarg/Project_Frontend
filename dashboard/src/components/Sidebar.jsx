@@ -109,17 +109,17 @@ export default function Sidebar({ open, setOpen }) {
           {/* Academics */}
           <div>
             <div className="px-3 py-2 rounded-md hover:bg-slate-50 flex items-center justify-between cursor-pointer transition-colors" onClick={() => setOpenAcademics(!openAcademics)}>
-              <div className="flex items-center gap-2"><FontAwesomeIcon icon={faSchool} /><span>Academics</span></div>
+              <div className="flex items-center gap-2"><FontAwesomeIcon icon={faSchool} /><span>Projects</span></div>
               <FontAwesomeIcon icon={openAcademics ? faChevronUp : faChevronDown} className="text-[10px]" />
             </div>
             {openAcademics && (
               <div className="ml-8 mt-1 space-y-1 border-l border-slate-200 pl-2">
                 <div onClick={() => { if (!checkFeatureAccess("academic.studentInfo")) setShowLockedModal(true); else handleNav("/dashboard/students"); }} className="px-3 py-2 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-50 text-black hover:text-blue-600">
-                  <span>Manage Students</span>
+                  <span>Manage Team</span>
                   {!checkFeatureAccess("academic.studentInfo") && <FontAwesomeIcon icon={faLock} className="text-[10px]" />}
                 </div>
                 <div onClick={() => { if (!checkFeatureAccess("academic.classrooms")) setShowLockedModal(true); else handleNav("/dashboard/courses"); }} className="px-3 py-2 rounded-md flex items-center justify-between cursor-pointer hover:bg-slate-50 text-black hover:text-blue-600">
-                  <span>Manage Courses</span>
+                  <span>Manage Tasks</span>
                   {!checkFeatureAccess("academic.classrooms") && <FontAwesomeIcon icon={faLock} className="text-[10px]" />}
                 </div>
               </div>
